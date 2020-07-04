@@ -25,6 +25,7 @@ import zipfile
 from datetime import date, timedelta
 
 from constants import *
+from cases_by_county_daily_table import create_daily_county_table
 from deaths_table import create_deaths_table
 from cases_by_category_table import create_cases_by_category_table
 from cases_by_county_table import create_cases_by_county_table
@@ -150,6 +151,7 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
+    create_daily_county_table(args["today"])
     create_deaths_table(args)
     create_cases_by_category_table(date_range, args, last_wednesday)
     create_cases_by_county_table(date_range, args)
