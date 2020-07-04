@@ -20,8 +20,9 @@
 
 import csv
 import os
-from datetime import timedelta
-from constants import DAY_FMT, TMP_DIR
+import re
+from datetime import date, timedelta
+from constants import *
 
 
 def get_data(date_range):
@@ -64,9 +65,9 @@ def get_data(date_range):
                 data[row["Date"]]["deaths_total"] = int(row["DeathsConfTotal"]) + int(
                     row["DeathsProbTotal"]
                 )
-            data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"]) + int(
-                row["DeathsProbNew"]
-            )
+                data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"]) + int(
+                    row["DeathsProbNew"]
+                )
     return data
 
 
@@ -88,7 +89,69 @@ def calculate_columns(date_range, data):
         )
 
 
-def create_cases_by_category_table(date_range, args):
+def prefix_number(val):
+    return "+" + str(val) if val > 0 else val
+
+
+def create_row(d, data, refname, last_wednesday):
+    pretty_date = d.strftime(CITATION_DATE_FORMAT)
+    url = CITATION_URL.format(d.strftime(URL_DATE_FMT).lower())
+    title = CITATION_TITLE.format(pretty_date)
+    pretty_today = date.today().strftime(CITATION_DATE_FORMAT)
+
+    row = '|-\n| style="text-align:left;" | {}\n'.format(d.strftime("%B %-d"))
+    row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["total_cases"])
+    row += "| {}\n".format(prefix_number(data["total_cases_new"]))
+    row += "| {}%\n".format(prefix_number(data["perc_change_cases"]))
+    row += "| {}\n".format(data["presumptive_cases"])
+    row += "| {}\n".format(data["confirmed_cases"])
+    row += '| style="border-left: 2px solid #888;" |\n|\n|\n|\n'
+    row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["testing_total"])
+    row += "| {}\n".format(prefix_number(data["testing_new"]))
+    row += "| {}%\n".format(prefix_number(data["perc_new_tests"]))
+    row += '| style="border-left: 2px solid #888;" |{}\n'.format(
+        data["hospitalized"] if "hospitalized" in data else ""
+    )
+    row += "|\n|\n"
+    row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["deaths_total"])
+    row += "| {}\n".format(prefix_number(data["deaths_new"]))
+    row += "| {}%\n".format(prefix_number(data["perc_new_deaths"]))
+    row += '| style="border-left: 2px solid #888;" |\n'
+    row += '| style="border-left: 2px solid #888;" |\n'
+    row += '|\n| style="border-left: 2px solid #888;" |'
+    row += '<ref group="note" name="{}">'.format(refname)
+    row += "{{{{Cite web|url={}|title={}|last=|first=|".format(url, title)
+    row += "date={}|website=Massachusetts Department of Public ".format(pretty_date)
+    row += "Health|url-status=live|archive-url=|archive-date=|"
+    row += "access-date={}}}}}</ref>".format(pretty_today)
+    row += '<ref group="note" name="MDPH-Weekly-{:02d}-{:02d}"/>\n'.format(
+        last_wednesday.month, last_wednesday.day
+    )
+    return row
+
+
+def get_next_refname(refname):
+    if not refname:
+        return ""
+    match = re.match(r":(\d+)", refname)
+    if match:
+        return ":{}".format(int(match.group(1)) - 1)
+    return ""
+
+
+def create_table(date_range, data, base_refname, last_wednesday):
+    rows = []
+    refname = base_refname
+    for date in reversed(date_range):
+        date_str = date.strftime(DAY_FMT)
+        row = create_row(date, data[date_str], refname, last_wednesday)
+        rows.insert(0, row)
+        refname = get_next_refname(refname)
+    with open(os.path.join(OUT_DIR, "cases_by_category.txt"), "w+") as f:
+        f.write("".join(rows))
+
+
+def create_cases_by_category_table(date_range, args, last_wednesday):
     data = get_data(date_range)
     calculate_columns(date_range, data)
-    print("hi")
+    create_table(date_range, data, args["refname"], last_wednesday)

@@ -72,7 +72,7 @@ def fetch_data(args):
         # If we're in dev mode and the files exist, we don't have to fetch them again.
         return
 
-    url_date = args["today"].strftime("%B-%-d-%Y").lower()
+    url_date = args["today"].strftime(URL_DATE_FMT).lower()
     url = URL.format(url_date)
     r = requests.get(url)
     if r.status_code == 200:
@@ -130,13 +130,26 @@ def get_date_range(today, fromdate):
     return dates
 
 
+def get_last_wednesday(today):
+    """Get the date of the most recent Wednesday (including today's date, if today is
+    a Wednesday. This is used to refer to the weekly data, which is published every
+    Wednesday."""
+    todays_day_of_week = today.weekday()
+    if todays_day_of_week == 2:
+        return today
+    else:
+        offset = (todays_day_of_week - 2) % 7
+        return today - timedelta(days=offset)
+
+
 def run():
     args = parse_args()
     date_range = get_date_range(args["today"], args["fromdate"])
+    last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
     # create_deaths_table(args)
-    create_cases_by_category_table(date_range, args)
+    create_cases_by_category_table(date_range, args, last_wednesday)
 
 
 if __name__ == "__main__":
