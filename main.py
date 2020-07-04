@@ -31,6 +31,11 @@ from deaths_table import create_deaths_table
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "refname",
+        help="The name for the reference referring to today's dataset",
+        type=str,
+    )
+    parser.add_argument(
         "--dev",
         help="developer mode, avoids making HTTP requests when possible",
         action="store_true",
@@ -53,19 +58,20 @@ def parse_args():
         "date. Format YYYY-MM-DD.",
     )
     args = parser.parse_args()
+    refname = args.refname
     dev = args.dev
     today = args.date if isinstance(args.date, date) else date.fromisoformat(args.date)
     fromdate = date.fromisoformat(args.fromdate) if args.fromdate else None
-    return dev, today, fromdate
+    return {"refname": refname, "dev": dev, "today": today, "fromdate": fromdate}
 
 
-def fetch_data(today, dev):
+def fetch_data(args):
     """Fetch the data for today and extract the necessary files."""
-    if dev and len(os.listdir(TMP_DIR)) > 0:
+    if args["dev"] and len(os.listdir(TMP_DIR)) > 0:
         # If we're in dev mode and the files exist, we don't have to fetch them again.
         return
 
-    url_date = today.strftime("%B-%-d-%Y")
+    url_date = args["today"].strftime("%B-%-d-%Y")
     r = requests.get(URL.format(url_date))
     if r.status_code == 200:
         zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")
@@ -84,11 +90,10 @@ def fetch_data(today, dev):
                 print("Extracted {}".format(filename))
 
     elif r.status_code == 404:
-        print(
+        raise Exception(
             "Data for this date was not found. This is probably because today's data "
             "hasn't been published yet."
         )
-        return None
     else:
         raise Exception(
             "Something went wrong when trying to download today's data",
@@ -97,12 +102,12 @@ def fetch_data(today, dev):
         )
 
 
-def set_up_folders(dev):
+def set_up_folders(args):
     """Ensure the tmp and output directories are in place and cleared as needed."""
     if not os.path.exists(TMP_DIR):
         # Create the tmp directory if it doesn't exist
         os.mkdir(TMP_DIR)
-    elif not dev:
+    elif not args["dev"]:
         # Clear out the tmp directory if it does exist and we're not in dev mode
         files = os.listdir(TMP_DIR)
         if len(files) != 0:
@@ -119,10 +124,10 @@ def set_up_folders(dev):
 
 
 def run():
-    dev, today, start = parse_args()
-    set_up_folders(dev)
-    fetch_data(today, dev)
-    create_deaths_table()
+    args = parse_args()
+    set_up_folders(args)
+    fetch_data(args)
+    create_deaths_table(args)
 
 
 if __name__ == "__main__":
