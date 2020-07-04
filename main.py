@@ -28,6 +28,7 @@ from constants import *
 from deaths_table import create_deaths_table
 from cases_by_category_table import create_cases_by_category_table
 from cases_by_county_table import create_cases_by_county_table
+from statistics import create_statistics_graphs
 
 
 def parse_args():
@@ -152,6 +153,7 @@ def run():
     create_deaths_table(args)
     create_cases_by_category_table(date_range, args, last_wednesday)
     create_cases_by_county_table(date_range, args)
+    create_statistics_graphs(args)
 
 
 if __name__ == "__main__":
