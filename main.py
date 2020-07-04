@@ -22,10 +22,11 @@ import argparse
 import os
 import requests
 import zipfile
-from datetime import date
+from datetime import date, timedelta
 
 from constants import *
 from deaths_table import create_deaths_table
+from cases_by_category_table import create_cases_by_category_table
 
 
 def parse_args():
@@ -71,28 +72,22 @@ def fetch_data(args):
         # If we're in dev mode and the files exist, we don't have to fetch them again.
         return
 
-    url_date = args["today"].strftime("%B-%-d-%Y")
-    r = requests.get(URL.format(url_date))
+    url_date = args["today"].strftime("%B-%-d-%Y").lower()
+    url = URL.format(url_date)
+    r = requests.get(url)
     if r.status_code == 200:
         zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")
         with open(zipfile_path, "wb+") as f:
             f.write(r.content)
         print("Downloaded today's data to {}.zip".format(url_date))
-        files_to_extract = [
-            "Age.csv",
-            "CasesByDate.csv",
-            "County.csv",
-            "DateofDeath.csv",
-        ]
         with zipfile.ZipFile(zipfile_path, "r") as zipObj:
-            for filename in files_to_extract:
-                zipObj.extract(filename, TMP_DIR)
-                print("Extracted {}".format(filename))
+            zipObj.extractall(TMP_DIR)
 
     elif r.status_code == 404:
         raise Exception(
             "Data for this date was not found. This is probably because today's data "
-            "hasn't been published yet."
+            "hasn't been published yet.",
+            url,
         )
     else:
         raise Exception(
@@ -123,11 +118,25 @@ def set_up_folders(args):
             [os.remove(os.path.join(OUT_DIR, f)) for f in files]
 
 
+def get_date_range(today, fromdate):
+    """Gets an array of dates for which we wish to collect data."""
+    dates = []
+    if fromdate:
+        d = fromdate
+        while d != today:
+            dates.append(d)
+            d = d + timedelta(days=1)
+    dates.append(today)
+    return dates
+
+
 def run():
     args = parse_args()
+    date_range = get_date_range(args["today"], args["fromdate"])
     set_up_folders(args)
     fetch_data(args)
-    create_deaths_table(args)
+    # create_deaths_table(args)
+    create_cases_by_category_table(date_range, args)
 
 
 if __name__ == "__main__":
