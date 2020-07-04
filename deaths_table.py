@@ -24,13 +24,13 @@ from constants import *
 
 HEADERS = [
     {"key": "80+", "header": "Above 80"},
-    {"key": "70-79", "header": "70–79"},
-    {"key": "60-69", "header": "60–69"},
-    {"key": "50-59", "header": "50–59"},
-    {"key": "40-49", "header": "40–49"},
-    {"key": "30-39", "header": "30-39"},
-    {"key": "20-29", "header": "20-29"},
-    {"key": "0-19", "header": "0-19"},
+    {"key": "70-79", "header": "70&ndash;79"},
+    {"key": "60-69", "header": "60&ndash;69"},
+    {"key": "50-59", "header": "50&ndash;59"},
+    {"key": "40-49", "header": "40&ndash;49"},
+    {"key": "30-39", "header": "30&ndash;39"},
+    {"key": "20-29", "header": "20&ndash;29"},
+    {"key": "0-19", "header": "0&ndash;19"},
     {"key": "Unknown", "header": "n/d"},
 ]
 
@@ -70,9 +70,9 @@ def create_wikitable(data, total_cases, total_deaths, args):
     for header in HEADERS:
         rows.append(create_row(header, data[header["key"]], total_cases, total_deaths))
     footer = '! colspan="2" | All\n'
-    footer += "|''''{:,}'''\n".format(total_cases)
+    footer += "|'''{:,}'''\n".format(total_cases)
     footer += "|'''(100.0)'''\n"
-    footer += "|''''{:,}'''\n".format(total_deaths)
+    footer += "|'''{:,}'''\n".format(total_deaths)
     footer += "|'''(100.0)'''\n"
     footer += "|'''({})'''\n".format(round(total_deaths / total_cases * 100, 1))
     footer += '|-\n| style="text-align:left;" colspan="7" | '

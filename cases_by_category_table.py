@@ -116,9 +116,9 @@ def create_row(d, data, refname, last_wednesday):
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["deaths_total"])
     row += "| {}\n".format(prefix_number(data["deaths_new"]))
     row += "| {}%\n".format(prefix_number(data["perc_new_deaths"]))
-    row += '| style="border-left: 2px solid #888;" |\n'
-    row += '| style="border-left: 2px solid #888;" |\n'
-    row += '|\n| style="border-left: 2px solid #888;" |'
+    row += '| style="border-left: 2px solid #888;" | TOTAL_RECOV\n'
+    row += '| style="border-left: 2px solid #888;" | TOTAL_QUAR\n'
+    row += '| TOTAL_RELEASED\n| style="border-left: 2px solid #888;" |'
     row += '<ref group="note" name="{}">'.format(refname)
     row += "{{{{Cite web|url={}|title={}|last=|first=|".format(url, title)
     row += "date={}|website=Massachusetts Department of Public ".format(pretty_date)
