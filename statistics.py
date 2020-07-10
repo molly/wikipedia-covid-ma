@@ -35,6 +35,19 @@ def create_date_list(today):
     return dates
 
 
+def safe_sum(v1, v2):
+    """Sum two integers (string type) accounting for the possibility that one or both
+    is missing; returns an integer."""
+    if v1:
+        if v2:
+            return int(v1) + int(v2)
+        else:
+            return int(v1)
+    if v2:
+        return int(v2)
+    return 0
+
+
 def create_cases_charts(date_list):
     date_str_list = [d.strftime(DAY_FMT) for d in date_list]
     data = {d: {} for d in date_str_list}
@@ -43,8 +56,8 @@ def create_cases_charts(date_list):
         for row in reader:
             if row["Date"] in data:
                 data[row["Date"]] = {
-                    "total": int(row["Positive Total"]) + int(row["Probable Total"]),
-                    "new": int(row["Positive New"]) + int(row["Probable New"]),
+                    "total": safe_sum(row["Positive Total"], row["Probable Total"]),
+                    "new": safe_sum(row["Positive New"], row["Positive New"]),
                 }
 
     out_str = "CASES DATES:\n"
@@ -67,8 +80,8 @@ def create_deaths_charts(date_list):
         for row in reader:
             if row["Date of Death"] in data:
                 data[row["Date of Death"]] = {
-                    "total": int(row["Confirmed Total"]) + int(row["Probable Total"]),
-                    "new": int(row["Confirmed Deaths"]) + int(row["Probable Deaths"]),
+                    "total": safe_sum(row["Confirmed Total"], row["Probable Total"]),
+                    "new": safe_sum(row["Confirmed Deaths"], row["Probable Deaths"]),
                 }
 
     # Zero out the days going back to February 26
