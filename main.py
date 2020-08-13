@@ -151,10 +151,10 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
-    create_daily_county_table(args["today"])
-    create_deaths_table(args)
+    # create_daily_county_table(args["today"])
+    # create_deaths_table(args)
     create_cases_by_category_table(date_range, args, last_wednesday)
-    create_cases_by_county_table(date_range, args)
+    # create_cases_by_county_table(date_range, args)
     create_statistics_graphs(args)
 
 

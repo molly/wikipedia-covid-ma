@@ -35,13 +35,9 @@ def get_data(date_range):
             if row["Date"] in data:
                 pos_total = int(row["Positive Total"])
                 pos_new = int(row["Positive New"])
-                prob_total = int(row["Probable Total"])
-                prob_new = int(row["Probable New"])
                 data[row["Date"]] = {
-                    "total_cases": pos_total + prob_total,
-                    "total_cases_new": pos_new + prob_new,
-                    "presumptive_cases": prob_total,
-                    "confirmed_cases": pos_total,
+                    "total_cases": pos_total,
+                    "total_cases_new": pos_new,
                 }
     with open(os.path.join(TMP_DIR, "Testing2.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -62,12 +58,8 @@ def get_data(date_range):
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row["Date"] in data:
-                data[row["Date"]]["deaths_total"] = int(row["DeathsConfTotal"]) + int(
-                    row["DeathsProbTotal"]
-                )
-                data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"]) + int(
-                    row["DeathsProbNew"]
-                )
+                data[row["Date"]]["deaths_total"] = int(row["DeathsConfTotal"])
+                data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"])
     return data
 
 
@@ -103,8 +95,8 @@ def create_row(d, data, refname, last_wednesday):
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["total_cases"])
     row += "| {}\n".format(prefix_number(data["total_cases_new"]))
     row += "| {}%\n".format(prefix_number(data["perc_change_cases"]))
-    row += "| {}\n".format(data["presumptive_cases"])
-    row += "| {}\n".format(data["confirmed_cases"])
+    row += "| \n"
+    row += "| {}\n".format(data["total_cases"])
     row += '| style="border-left: 2px solid #888;" |\n|\n|\n|\n'
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["testing_total"])
     row += "| {}\n".format(prefix_number(data["testing_new"]))

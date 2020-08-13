@@ -56,8 +56,8 @@ def create_cases_charts(date_list):
         for row in reader:
             if row["Date"] in data:
                 data[row["Date"]] = {
-                    "total": safe_sum(row["Positive Total"], row["Probable Total"]),
-                    "new": safe_sum(row["Positive New"], row["Positive New"]),
+                    "total": int(row["Positive Total"]),
+                    "new": int(row["Positive New"]),
                 }
 
     out_str = "CASES DATES:\n"
@@ -80,8 +80,8 @@ def create_deaths_charts(date_list):
         for row in reader:
             if row["Date of Death"] in data:
                 data[row["Date of Death"]] = {
-                    "total": safe_sum(row["Confirmed Total"], row["Probable Total"]),
-                    "new": safe_sum(row["Confirmed Deaths"], row["Probable Deaths"]),
+                    "total": int(row["Confirmed Total"]),
+                    "new": int(row["Confirmed Deaths"]),
                 }
 
     # Zero out the days going back to February 26
