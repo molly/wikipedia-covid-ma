@@ -25,11 +25,7 @@ import zipfile
 from datetime import date, timedelta
 
 from constants import *
-from cases_by_county_daily_table import create_daily_county_table
-from deaths_table import create_deaths_table
-from cases_by_category_table import create_cases_by_category_table
-from cases_by_county_table import create_cases_by_county_table
-from statistics import create_statistics_graphs
+from counties import create_county_tables
 
 
 def parse_args():
@@ -77,7 +73,9 @@ def fetch_data(args):
 
     url_date = args["today"].strftime(URL_DATE_FMT).lower()
     url = URL.format(url_date)
-    r = requests.get(url)
+    yesterday = (args["today"] - timedelta(days=1)).strftime(URL_DATE_FMT).lower()
+    excel_url = EXCEL_URL.format(yesterday)
+    r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
         zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")
         with open(zipfile_path, "wb+") as f:
@@ -85,7 +83,6 @@ def fetch_data(args):
         print("Downloaded today's data to {}.zip".format(url_date))
         with zipfile.ZipFile(zipfile_path, "r") as zipObj:
             zipObj.extractall(TMP_DIR)
-
     elif r.status_code == 404:
         raise Exception(
             "Data for this date was not found. This is probably because today's data "
@@ -97,6 +94,25 @@ def fetch_data(args):
             "Something went wrong when trying to download today's data",
             r.status_code,
             r.reason,
+        )
+
+    r2 = requests.get(excel_url, headers=REQUEST_HEADER)
+    if r2.status_code == 200:
+        excel_path = os.path.join(TMP_DIR, yesterday + ".xlsx")
+        with open(excel_path, "wb+") as f:
+            f.write(r2.content)
+        print("Downloaded yesterday's data to {}.xlsx".format(yesterday))
+    elif r2.status_code == 404:
+        raise Exception(
+            "Excel data was not found. This is probably because the data "
+            "hasn't been published yet.",
+            url,
+        )
+    else:
+        raise Exception(
+            "Something went wrong when trying to download today's data",
+            r2.status_code,
+            r2.reason,
         )
 
 
@@ -151,11 +167,9 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
-    # create_daily_county_table(args["today"])
-    # create_deaths_table(args)
-    create_cases_by_category_table(date_range, args, last_wednesday)
-    # create_cases_by_county_table(date_range, args)
-    create_statistics_graphs(args)
+    create_county_tables(args)
+    # create_cases_by_category_table(date_range, args, last_wednesday)
+    # create_statistics_graphs(args)
 
 
 if __name__ == "__main__":
