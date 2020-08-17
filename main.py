@@ -25,7 +25,10 @@ import zipfile
 from datetime import date, timedelta
 
 from constants import *
-from counties import create_county_tables
+from cases_by_category_table import create_cases_by_category_table
+from statistics import create_statistics_graphs
+
+# from counties import create_county_tables
 
 
 def parse_args():
@@ -73,8 +76,8 @@ def fetch_data(args):
 
     url_date = args["today"].strftime(URL_DATE_FMT).lower()
     url = URL.format(url_date)
-    yesterday = (args["today"] - timedelta(days=1)).strftime(URL_DATE_FMT).lower()
-    excel_url = EXCEL_URL.format(yesterday)
+    # yesterday = (args["today"] - timedelta(days=1)).strftime(URL_DATE_FMT).lower()
+    # excel_url = EXCEL_URL.format(yesterday)
     r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
         zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")
@@ -96,24 +99,24 @@ def fetch_data(args):
             r.reason,
         )
 
-    r2 = requests.get(excel_url, headers=REQUEST_HEADER)
-    if r2.status_code == 200:
-        excel_path = os.path.join(TMP_DIR, yesterday + ".xlsx")
-        with open(excel_path, "wb+") as f:
-            f.write(r2.content)
-        print("Downloaded yesterday's data to {}.xlsx".format(yesterday))
-    elif r2.status_code == 404:
-        raise Exception(
-            "Excel data was not found. This is probably because the data "
-            "hasn't been published yet.",
-            url,
-        )
-    else:
-        raise Exception(
-            "Something went wrong when trying to download today's data",
-            r2.status_code,
-            r2.reason,
-        )
+    # r2 = requests.get(excel_url, headers=REQUEST_HEADER)
+    # if r2.status_code == 200:
+    #     excel_path = os.path.join(TMP_DIR, yesterday + ".xlsx")
+    #     with open(excel_path, "wb+") as f:
+    #         f.write(r2.content)
+    #     print("Downloaded yesterday's data to {}.xlsx".format(yesterday))
+    # elif r2.status_code == 404:
+    #     raise Exception(
+    #         "Excel data was not found. This is probably because the data "
+    #         "hasn't been published yet.",
+    #         url,
+    #     )
+    # else:
+    #     raise Exception(
+    #         "Something went wrong when trying to download today's data",
+    #         r2.status_code,
+    #         r2.reason,
+    #     )
 
 
 def set_up_folders(args):
@@ -167,9 +170,9 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
-    create_county_tables(args)
-    # create_cases_by_category_table(date_range, args, last_wednesday)
-    # create_statistics_graphs(args)
+    # create_county_tables(args)
+    create_cases_by_category_table(date_range, args, last_wednesday)
+    create_statistics_graphs(args)
 
 
 if __name__ == "__main__":
