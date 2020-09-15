@@ -81,18 +81,24 @@ def create_infobox(data, today, last_wednesday, manual_data):
     lines.append(
         "| hospitalized_cases = {} (current)<br>{} (cumulative) <br>{}"
         '<ref name="MDPH-Cases"/>'.format(
-            manual_data["hosp_current"], manual_data["hosp_cumulative"], asof
+            manual_data["hosp_current"] if manual_data else "CURRENT HOSP",
+            manual_data["hosp_cumulative"] if manual_data else "CUMULATIVE HOSP",
+            asof,
         )
     )
     lines.append(
-        "| critical_cases  = {} (current) {}".format(manual_data["icu_current"], asof)
+        "| critical_cases  = {} (current) {}".format(
+            manual_data["icu_current"] if manual_data else "CURRENT ICU", asof
+        )
     )
     lines.append(
-        "| ventilator_cases = {} (current) {}".format(manual_data["vent_current"], asof)
+        "| ventilator_cases = {} (current) {}".format(
+            manual_data["vent_current"] if manual_data else "CURRENT VENT", asof
+        )
     )
     lines.append(
         '| recovery_cases = {} {}<ref group="note" name="MDPH-Weekly-{}"/>'.format(
-            manual_data["recoveries"],
+            manual_data["recoveries"] if manual_data else "RECOVERIES",
             asof_last_wednesday,
             last_wednesday.strftime("%m-%d"),
         )
@@ -122,7 +128,7 @@ def create_bar_chart(data, date_range, last_wednesday, manual_data):
                 date=date.strftime(BAR_CHART_FMT),
                 deaths=data[date_str]["deaths"],
                 recov=manual_data["recoveries"]
-                if date >= last_wednesday
+                if manual_data and date >= last_wednesday
                 else "RECOVERIES",
                 conf=data[date_str]["confirmed_cases"],
                 prob=data[date_str]["probable_cases"],

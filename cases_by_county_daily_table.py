@@ -145,7 +145,9 @@ def create_header_row(data, recov):
     row += HEADER_STYLE + "| '''14 / 14'''\n"
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_cases)
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_deaths)
-    row += HEADER_STYLE + "| '''{:,}'''\n".format(recov)
+    row += HEADER_STYLE + "| '''{}'''\n".format(
+        "{:,}".format(recov) if recov else "RECOVERIES"
+    )
     row += HEADER_STYLE + "| '''{:,}'''\n".format(TOTAL_POPULATION)
     row += HEADER_STYLE + "| '''{}'''\n".format(
         CASES_PER_POP_FORMULA.format(total_cases, divided_pop)

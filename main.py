@@ -40,6 +40,12 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
+        "--no-manual",
+        help="skip manually inputting extra data (will result in placeholders in output"
+        + "files that will need to be replaced)",
+        action="store_true",
+    )
+    parser.add_argument(
         "--dev",
         help="developer mode, avoids making HTTP requests when possible",
         action="store_true",
@@ -64,9 +70,16 @@ def parse_args():
     args = parser.parse_args()
     refname = args.refname
     dev = args.dev
+    nomanual = args.no_manual
     today = args.date if isinstance(args.date, date) else date.fromisoformat(args.date)
     fromdate = date.fromisoformat(args.fromdate) if args.fromdate else None
-    return {"refname": refname, "dev": dev, "today": today, "fromdate": fromdate}
+    return {
+        "refname": refname,
+        "nomanual": nomanual,
+        "dev": dev,
+        "today": today,
+        "fromdate": fromdate,
+    }
 
 
 def fetch_data(args):
@@ -77,8 +90,6 @@ def fetch_data(args):
 
     url_date = args["today"].strftime(URL_DATE_FMT).lower()
     url = URL.format(url_date)
-    # yesterday = (args["today"] - timedelta(days=1)).strftime(URL_DATE_FMT).lower()
-    # excel_url = EXCEL_URL.format(yesterday)
     r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
         zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")
@@ -105,7 +116,7 @@ def get_manual_data(today, last_wednesday):
     """Some data isn't included in the CSVs but can be pulled from other reports."""
     print(
         "From the weekly report: https://www.mass.gov/doc/weekly-covid-19-public-health"
-        "-report-{}/download".format(last_wednesday.strftime(URL_DATE_FMT))
+        "-report-{}/download".format(last_wednesday.strftime(URL_DATE_FMT).lower())
     )
     quar_total = input("Total individuals subject to quarantine: ")
     quar_released = input(
@@ -113,8 +124,8 @@ def get_manual_data(today, last_wednesday):
     )
     recoveries = input("Total cases released from isolation: ")
     print(
-        "\n\n\nFrom the daily report: https://www.mass.gov/doc/covid-19-dashboard"
-        "-{}/download".format(today.strftime(URL_DATE_FMT))
+        "\n\nFrom the daily report: https://www.mass.gov/doc/covid-19-dashboard"
+        "-{}/download".format(today.strftime(URL_DATE_FMT).lower())
     )
     hosp_current = input("Currently hospitalized: ")
     icu_current = input("Currently in ICU: ")
@@ -182,11 +193,15 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
-    manual_data = get_manual_data(args["today"], last_wednesday)
+    manual_data = (
+        None if args["nomanual"] else get_manual_data(args["today"], last_wednesday)
+    )
     create_infobox_and_barchart(date_range, args, last_wednesday, manual_data)
     create_cases_by_category_table(date_range, args, last_wednesday, manual_data)
     create_cases_by_county_table(date_range, args)
-    create_daily_county_table(args["today"], manual_data["recoveries"])
+    create_daily_county_table(
+        args["today"], manual_data["recoveries"] if manual_data else None
+    )
     create_statistics_graphs(args)
 
 
