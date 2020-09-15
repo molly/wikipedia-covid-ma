@@ -133,7 +133,7 @@ def get_data(today):
         return data
 
 
-def create_header_row(data):
+def create_header_row(data, recov):
     total_cases = 0
     total_deaths = 0
     for c in COUNTIES:
@@ -145,7 +145,7 @@ def create_header_row(data):
     row += HEADER_STYLE + "| '''14 / 14'''\n"
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_cases)
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_deaths)
-    row += HEADER_STYLE + "| '''TOTAL_RECOVERIES'''\n"
+    row += HEADER_STYLE + "| '''{:,}'''\n".format(recov)
     row += HEADER_STYLE + "| '''{:,}'''\n".format(TOTAL_POPULATION)
     row += HEADER_STYLE + "| '''{}'''\n".format(
         CASES_PER_POP_FORMULA.format(total_cases, divided_pop)
@@ -194,8 +194,8 @@ def create_footer(today):
     return row
 
 
-def create_table(data, today):
-    rows = [create_header_row(data)]
+def create_table(data, today, recov):
+    rows = [create_header_row(data, recov)]
     for c in COUNTIES:
         rows.append(create_county_row(c, data[c["county"]]))
     rows.append(create_footer(today))
@@ -203,6 +203,6 @@ def create_table(data, today):
         f.write("".join(rows))
 
 
-def create_daily_county_table(today):
+def create_daily_county_table(today, recov):
     data = get_data(today)
-    create_table(data, today)
+    create_table(data, today, recov)

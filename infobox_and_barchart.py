@@ -56,7 +56,7 @@ def get_data(date_range, today):
     return data
 
 
-def create_infobox(data, today, last_wednesday):
+def create_infobox(data, today, last_wednesday, manual_data):
     lines = []
     today_str = today.strftime(DAY_FMT)
     today_citation = today.strftime(CITATION_DATE_FORMAT)
@@ -79,14 +79,22 @@ def create_infobox(data, today, last_wednesday):
         )
     )
     lines.append(
-        "| hospitalized_cases = CURRENT_HOSP (current)<br>CUMULATIVE_HOSP (cumulative) <br>{}"
-        '<ref name="MDPH-Cases"/>'.format(asof)
+        "| hospitalized_cases = {} (current)<br>{} (cumulative) <br>{}"
+        '<ref name="MDPH-Cases"/>'.format(
+            manual_data["hosp_current"], manual_data["hosp_cumulative"], asof
+        )
     )
-    lines.append("| critical_cases  = CURRENT_ICU (current) {}".format(asof))
-    lines.append("| ventilator_cases = CURRENT_VENT (current) {}".format(asof))
     lines.append(
-        '| recovery_cases = RECOVERED {}<ref group="note" name="MDPH-Weekly-{}"/>'.format(
-            asof_last_wednesday, last_wednesday.strftime("%m-%d")
+        "| critical_cases  = {} (current) {}".format(manual_data["icu_current"], asof)
+    )
+    lines.append(
+        "| ventilator_cases = {} (current) {}".format(manual_data["vent_current"], asof)
+    )
+    lines.append(
+        '| recovery_cases = {} {}<ref group="note" name="MDPH-Weekly-{}"/>'.format(
+            manual_data["recoveries"],
+            asof_last_wednesday,
+            last_wednesday.strftime("%m-%d"),
         )
     )
     lines.append(
@@ -97,7 +105,7 @@ def create_infobox(data, today, last_wednesday):
     return "\n".join(lines)
 
 
-def create_bar_chart(data, date_range):
+def create_bar_chart(data, date_range, last_wednesday, manual_data):
     rows = []
     for date in date_range:
         prev_day = (date - timedelta(days=1)).strftime(DAY_FMT)
@@ -109,10 +117,13 @@ def create_bar_chart(data, date_range):
         ) * 100
         sign = "" if perc_case_change < 0 else "+"
         row = (
-            "{date};{deaths};RECOVERIES;{conf};{prob};;{total:,};{sign}"
+            "{date};{deaths};{recov};{conf};{prob};;{total:,};{sign}"
             "{change:.2f}%".format(
                 date=date.strftime(BAR_CHART_FMT),
                 deaths=data[date_str]["deaths"],
+                recov=manual_data["recoveries"]
+                if date >= last_wednesday
+                else "RECOVERIES",
                 conf=data[date_str]["confirmed_cases"],
                 prob=data[date_str]["probable_cases"],
                 total=data[date_str]["total_cases"],
@@ -129,8 +140,8 @@ def write_file(infobox, bar_chart):
         f.write(infobox + "\n\n\n" + bar_chart)
 
 
-def create_infobox_and_barchart(date_range, args, last_wednesday):
+def create_infobox_and_barchart(date_range, args, last_wednesday, manual_data):
     data = get_data(date_range, args["today"])
-    infobox = create_infobox(data, args["today"], last_wednesday)
-    bar_chart = create_bar_chart(data, date_range)
+    infobox = create_infobox(data, args["today"], last_wednesday, manual_data)
+    bar_chart = create_bar_chart(data, date_range, last_wednesday, manual_data)
     write_file(infobox, bar_chart)

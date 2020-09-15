@@ -100,24 +100,35 @@ def fetch_data(args):
             r.reason,
         )
 
-    # r2 = requests.get(excel_url, headers=REQUEST_HEADER)
-    # if r2.status_code == 200:
-    #     excel_path = os.path.join(TMP_DIR, yesterday + ".xlsx")
-    #     with open(excel_path, "wb+") as f:
-    #         f.write(r2.content)
-    #     print("Downloaded yesterday's data to {}.xlsx".format(yesterday))
-    # elif r2.status_code == 404:
-    #     raise Exception(
-    #         "Excel data was not found. This is probably because the data "
-    #         "hasn't been published yet.",
-    #         url,
-    #     )
-    # else:
-    #     raise Exception(
-    #         "Something went wrong when trying to download today's data",
-    #         r2.status_code,
-    #         r2.reason,
-    #     )
+
+def get_manual_data(today, last_wednesday):
+    """Some data isn't included in the CSVs but can be pulled from other reports."""
+    print(
+        "From the weekly report: https://www.mass.gov/doc/weekly-covid-19-public-health"
+        "-report-{}/download".format(last_wednesday.strftime(URL_DATE_FMT))
+    )
+    quar_total = input("Total individuals subject to quarantine: ")
+    quar_released = input(
+        "Total individuals who have completed monitoring (no longer in quarantine): "
+    )
+    recoveries = input("Total cases released from isolation: ")
+    print(
+        "\n\n\nFrom the daily report: https://www.mass.gov/doc/covid-19-dashboard"
+        "-{}/download".format(today.strftime(URL_DATE_FMT))
+    )
+    hosp_current = input("Currently hospitalized: ")
+    icu_current = input("Currently in ICU: ")
+    vent_current = input("Currently intubated: ")
+    hosp_cumulative = input("Cumulative hospitalizations: ")
+    return {
+        "quar_total": int(quar_total),
+        "quar_released": int(quar_released),
+        "recoveries": int(recoveries),
+        "hosp_current": int(hosp_current),
+        "icu_current": int(icu_current),
+        "vent_current": int(vent_current),
+        "hosp_cumulative": int(hosp_cumulative),
+    }
 
 
 def set_up_folders(args):
@@ -171,10 +182,11 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
-    create_infobox_and_barchart(date_range, args, last_wednesday)
-    create_cases_by_category_table(date_range, args, last_wednesday)
+    manual_data = get_manual_data(args["today"], last_wednesday)
+    create_infobox_and_barchart(date_range, args, last_wednesday, manual_data)
+    create_cases_by_category_table(date_range, args, last_wednesday, manual_data)
     create_cases_by_county_table(date_range, args)
-    create_daily_county_table(args["today"])
+    create_daily_county_table(args["today"], manual_data["recoveries"])
     create_statistics_graphs(args)
 
 
