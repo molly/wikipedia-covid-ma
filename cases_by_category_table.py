@@ -23,12 +23,13 @@ import os
 import re
 from datetime import date, timedelta
 from constants import *
+from utils import comma_separate
 
 
 def get_data(date_range):
     # Also grab data for the day before, so we can calculate % change
     prev_day = date_range[0] - timedelta(days=1)
-    data = {date.strftime(DAY_FMT): {} for date in [prev_day] + date_range}
+    data = {d.strftime(DAY_FMT): {} for d in [prev_day] + date_range}
     with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -78,7 +79,9 @@ def calculate_columns(date_range, data):
         day_str = day.strftime(DAY_FMT)
         prev_day_str = prev_day.strftime(DAY_FMT)
         data[day_str]["perc_change_cases"] = round(
-            data[day_str]["total_cases_new"] / data[prev_day_str]["total_cases"] * 100,
+            (data[day_str]["total_cases_new"] + data[day_str]["probable_cases_new"])
+            / (data[prev_day_str]["total_cases"] + data[prev_day_str]["probable_cases"])
+            * 100,
             1,
         )
         data[day_str]["perc_new_tests"] = round(
@@ -99,11 +102,15 @@ def create_row(d, data, refname, last_wednesday, manual_data):
     title = CITATION_TITLE.format(pretty_date)
     pretty_today = date.today().strftime(CITATION_DATE_FORMAT)
 
-    row = '|-\n| style="text-align:left;" | {}\n'.format(d.strftime("%B %-d"))
-    row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["total_cases"])
-    row += "| {}\n".format(prefix_number(data["total_cases_new"]))
+    row = '|-\n| style="text-align:left;" | {}\n'.format(d.strftime("%B&nbsp;%-d"))
+    row += '| style="border-left: 2px solid #888;" |{}\n'.format(
+        data["total_cases"] + data["probable_cases"]
+    )
+    row += "| {}\n".format(
+        prefix_number(data["total_cases_new"] + data["probable_cases_new"])
+    )
     row += "| {}%\n".format(prefix_number(data["perc_change_cases"]))
-    row += "| \n"
+    row += "| {}\n".format(data["probable_cases"])
     row += "| {}\n".format(data["total_cases"])
     row += '| style="border-left: 2px solid #888;" |\n|\n|\n|\n'
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(data["testing_total"])
@@ -117,14 +124,18 @@ def create_row(d, data, refname, last_wednesday, manual_data):
     row += "| {}\n".format(prefix_number(data["deaths_new"]))
     row += "| {}%\n".format(prefix_number(data["perc_new_deaths"]))
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(
-        manual_data["recoveries"] if d <= last_wednesday else "RECOVERIES"
+        manual_data["recoveries"]
+        if manual_data and d >= last_wednesday
+        else "RECOVERIES"
     )
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(
-        manual_data["quar_total"] if d <= last_wednesday else "TOTAL QUARANTINED"
+        manual_data["quar_total"]
+        if manual_data and d >= last_wednesday
+        else "TOTAL QUARANTINED"
     )
     row += '|{}\n| style="border-left: 2px solid #888;" |'.format(
         manual_data["quar_released"]
-        if d <= last_wednesday
+        if manual_data and d >= last_wednesday
         else "RELEASED FROM QUARANTINE"
     )
     row += '<ref group="note" name="{}">'.format(refname)
@@ -152,12 +163,14 @@ def create_table(date_range, data, base_refname, last_wednesday, manual_data):
     refname = base_refname
     prev_day_str = (date_range[0] - timedelta(days=1)).strftime(DAY_FMT)
     rows.append(
-        "{} hospitalized: {}".format(prev_day_str, data[prev_day_str]["hospitalized"]),
+        "\n\n\n{} hospitalized: {}".format(
+            prev_day_str, data[prev_day_str]["hospitalized"]
+        ),
     )
-    for date in date_range:
-        date_str = date.strftime(DAY_FMT)
-        row = create_row(date, data[date_str], refname, last_wednesday, manual_data)
-        rows.append(row)
+    for d in reversed(date_range):
+        date_str = d.strftime(DAY_FMT)
+        row = create_row(d, data[date_str], refname, last_wednesday, manual_data)
+        rows.insert(0, row)
         refname = get_next_refname(refname)
     with open(os.path.join(OUT_DIR, "cases_by_category.txt"), "w+") as f:
         f.write("".join(rows))

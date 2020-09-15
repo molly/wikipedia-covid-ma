@@ -19,3 +19,9 @@ CITATION_TITLE = "COVID-19 Dashboard – {}"
 REQUEST_HEADER = {
     "user-agent": "COVID in Massachusetts data parser: https://github.com/molly/wikipedia-covid-ma"
 }
+
+EMPTY_COUNTY_TABLE_ROW = (
+    '|-\n| style="text-align:left;" | ⋮\n| style="border-left: 2px solid #888;" |\n|\n'
+    '|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n| style="border-left: 2px solid #888;" |\n|\n'
+    '|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n|\n| style="border-left: 2px solid #888;" |\n'
+)

@@ -21,6 +21,7 @@
 import csv
 import os
 from constants import *
+from utils import comma_separate
 
 TOTAL_POPULATION = 6892503
 CASES_PER_POP_FORMULA = (
@@ -146,7 +147,7 @@ def create_header_row(data, recov):
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_cases)
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_deaths)
     row += HEADER_STYLE + "| '''{}'''\n".format(
-        "{:,}".format(recov) if recov else "RECOVERIES"
+        comma_separate(recov) if recov else "RECOVERIES"
     )
     row += HEADER_STYLE + "| '''{:,}'''\n".format(TOTAL_POPULATION)
     row += HEADER_STYLE + "| '''{}'''\n".format(

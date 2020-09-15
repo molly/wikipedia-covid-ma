@@ -118,10 +118,10 @@ def get_manual_data(today, last_wednesday):
         "From the weekly report: https://www.mass.gov/doc/weekly-covid-19-public-health"
         "-report-{}/download".format(last_wednesday.strftime(URL_DATE_FMT).lower())
     )
-    quar_total = input("Total individuals subject to quarantine: ")
     quar_released = input(
         "Total individuals who have completed monitoring (no longer in quarantine): "
     )
+    quar_total = input("Total individuals subject to quarantine: ")
     recoveries = input("Total cases released from isolation: ")
     print(
         "\n\nFrom the daily report: https://www.mass.gov/doc/covid-19-dashboard"

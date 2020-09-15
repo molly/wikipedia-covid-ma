@@ -20,8 +20,9 @@
 
 import csv
 import os
-from datetime import date, timedelta
+from datetime import timedelta
 from constants import *
+from utils import comma_separate
 
 
 def get_data(date_range, today):
@@ -46,13 +47,36 @@ def get_data(date_range, today):
                 data[row["Date"]]["confirmed_cases"] = confirmed
                 data[row["Date"]]["probable_cases"] = probable
                 data[row["Date"]]["total_cases"] = confirmed + probable
-    with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as csvfile:
-        reader = csv.DictReader(csvfile)
+    with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as deaths_csv:
+        reader = csv.DictReader(deaths_csv)
         for row in reader:
             if row["Date"] in data:
                 data[row["Date"]]["deaths"] = int(row["DeathsConfTotal"]) + int(
                     row["DeathsProbTotal"]
                 )
+
+    # Additional data for today only, for use in the article body
+    with open(os.path.join(TMP_DIR, "Testing2.csv"), "r") as tests_csv:
+        reader = csv.DictReader(tests_csv)
+        for row in reader:
+            if row["Date"] == today_str:
+                data[today_str]["total_molecular_tests"] = int(
+                    row["Molecular All Tests Total"]
+                )
+                data[today_str]["individual_molecular_tests"] = int(
+                    row["Molecular Total"]
+                )
+                data[today_str]["antibody_tests"] = int(row["Serology Total"])
+                data[today_str]["antigen_tests"] = int(row["Antigen Total"])
+    with open(os.path.join(TMP_DIR, "LTC Facilities.csv"), "r") as ltc_csv:
+        reader = csv.DictReader(ltc_csv)
+        for row in reader:
+            if row["date"] == today_str:
+                data[today_str]["ltc_deaths"] = int(row["Deaths Reported in LTCFs"])
+                data[today_str]["ltc_cases"] = int(
+                    row["Cases in Residents/Healthcare Workers of LTCFs"]
+                )
+                data[today_str]["ltc_facilities"] = int(row["facilities"])
     return data
 
 
@@ -79,26 +103,36 @@ def create_infobox(data, today, last_wednesday, manual_data):
         )
     )
     lines.append(
-        "| hospitalized_cases = {} (current)<br>{} (cumulative) <br>{}"
+        "| hospitalized_cases = {} (current)<br>{} (cumulative)<br />{}"
         '<ref name="MDPH-Cases"/>'.format(
-            manual_data["hosp_current"] if manual_data else "CURRENT HOSP",
-            manual_data["hosp_cumulative"] if manual_data else "CUMULATIVE HOSP",
+            comma_separate(manual_data["hosp_current"])
+            if manual_data
+            else "CURRENT HOSP",
+            comma_separate(manual_data["hosp_cumulative"])
+            if manual_data
+            else "CUMULATIVE HOSP",
             asof,
         )
     )
     lines.append(
         "| critical_cases  = {} (current) {}".format(
-            manual_data["icu_current"] if manual_data else "CURRENT ICU", asof
+            comma_separate(manual_data["icu_current"])
+            if manual_data
+            else "CURRENT ICU",
+            asof,
         )
     )
     lines.append(
         "| ventilator_cases = {} (current) {}".format(
-            manual_data["vent_current"] if manual_data else "CURRENT VENT", asof
+            comma_separate(manual_data["vent_current"])
+            if manual_data
+            else "CURRENT VENT",
+            asof,
         )
     )
     lines.append(
-        '| recovery_cases = {} {}<ref group="note" name="MDPH-Weekly-{}"/>'.format(
-            manual_data["recoveries"] if manual_data else "RECOVERIES",
+        '| recovery_cases  = {} {}<ref group="note" name="MDPH-Weekly-{}"/>'.format(
+            comma_separate(manual_data["recoveries"]) if manual_data else "RECOVERIES",
             asof_last_wednesday,
             last_wednesday.strftime("%m-%d"),
         )
@@ -141,13 +175,35 @@ def create_bar_chart(data, date_range, last_wednesday, manual_data):
     return "\n".join(rows)
 
 
-def write_file(infobox, bar_chart):
+def get_addl_info(data, today):
+    today_str = today.strftime(DAY_FMT)
+    addl = "Tests:\n\tMolecular: {:,} tests on {:,} individuals".format(
+        data[today_str]["total_molecular_tests"],
+        data[today_str]["individual_molecular_tests"],
+    )
+    addl += "\n\tAntibody: {:,}".format(data[today_str]["antibody_tests"])
+    addl += "\n\tAntigen: {:,}".format(data[today_str]["antigen_tests"])
+    addl += "\n\nLong-term care:\n\tDeaths: {:,}".format(data[today_str]["ltc_deaths"])
+    addl += "\n\tCases among residents & workers: {:,}".format(
+        data[today_str]["ltc_cases"]
+    )
+    addl += "\n\tFacilities with >=1 case: {:,}".format(
+        data[today_str]["ltc_facilities"]
+    )
+    addl += "\n\t% of deaths that are LTC residents: {:.0f}%".format(
+        data[today_str]["ltc_deaths"] / data[today_str]["deaths"] * 100
+    )
+    return addl
+
+
+def write_file(infobox, bar_chart, addl_info_for_article_body):
     with open(os.path.join(OUT_DIR, "infobox_and_barchart.txt"), "w+") as f:
-        f.write(infobox + "\n\n\n" + bar_chart)
+        f.write(infobox + "\n\n\n" + bar_chart + "\n\n\n" + addl_info_for_article_body)
 
 
 def create_infobox_and_barchart(date_range, args, last_wednesday, manual_data):
     data = get_data(date_range, args["today"])
     infobox = create_infobox(data, args["today"], last_wednesday, manual_data)
     bar_chart = create_bar_chart(data, date_range, last_wednesday, manual_data)
-    write_file(infobox, bar_chart)
+    addl_info_for_article_body = get_addl_info(data, args["today"])
+    write_file(infobox, bar_chart, addl_info_for_article_body)

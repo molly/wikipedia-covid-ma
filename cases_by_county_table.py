@@ -70,7 +70,7 @@ def get_data(date_range):
 
 
 def create_row(d, data, refname):
-    row = '|-\n| style="text-align:left;" | {}\n'.format(d.strftime("%B %-d"))
+    row = '|-\n| style="text-align:left;" | {}\n'.format(d.strftime("%B&nbsp;%-d"))
     row += '| style="border-left: 2px solid #888;" '
     for county in COUNTIES:
         row += "| {}\n".format(data[county]["count"])
