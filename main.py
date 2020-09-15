@@ -25,10 +25,11 @@ import zipfile
 from datetime import date, timedelta
 
 from constants import *
+from infobox_and_barchart import create_infobox_and_barchart
 from cases_by_category_table import create_cases_by_category_table
+from cases_by_county_table import create_cases_by_county_table
+from cases_by_county_daily_table import create_daily_county_table
 from statistics import create_statistics_graphs
-
-# from counties import create_county_tables
 
 
 def parse_args():
@@ -170,8 +171,10 @@ def run():
     last_wednesday = get_last_wednesday(args["today"])
     set_up_folders(args)
     fetch_data(args)
-    # create_county_tables(args)
+    create_infobox_and_barchart(date_range, args, last_wednesday)
     create_cases_by_category_table(date_range, args, last_wednesday)
+    create_cases_by_county_table(date_range, args)
+    create_daily_county_table(args["today"])
     create_statistics_graphs(args)
 
 

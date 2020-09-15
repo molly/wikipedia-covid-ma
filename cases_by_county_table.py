@@ -43,7 +43,9 @@ COUNTIES = [
 
 def get_data(date_range):
     data = {date.strftime(DAY_FMT): {} for date in date_range}
-    with open(os.path.join(TMP_DIR, "County.csv"), "r") as csvfile:
+    with open(
+        os.path.join(TMP_DIR, "County.csv"), "r", encoding="utf-8-sig"
+    ) as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row["Date"] in data:
@@ -56,10 +58,14 @@ def get_data(date_range):
                 if county not in data[row["Date"]]:
                     data[row["Date"]][county] = {"count": 0, "deaths": 0}
 
-                if row["Count"]:
-                    data[row["Date"]][county]["count"] += int(row["Count"])
-                if row["Deaths"]:
-                    data[row["Date"]][county]["deaths"] += int(row["Deaths"])
+                if row["Total Confirmed Cases"]:
+                    data[row["Date"]][county]["count"] += int(
+                        row["Total Confirmed Cases"]
+                    )
+                if row["Total Probable and Confirmed Deaths"]:
+                    data[row["Date"]][county]["deaths"] += int(
+                        row["Total Probable and Confirmed Deaths"]
+                    )
     return data
 
 

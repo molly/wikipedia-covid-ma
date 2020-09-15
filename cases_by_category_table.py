@@ -35,9 +35,13 @@ def get_data(date_range):
             if row["Date"] in data:
                 pos_total = int(row["Positive Total"])
                 pos_new = int(row["Positive New"])
+                prob_total = int(row["Probable Total"])
+                prob_new = int(row["Probable New"])
                 data[row["Date"]] = {
                     "total_cases": pos_total,
                     "total_cases_new": pos_new,
+                    "probable_cases": prob_total,
+                    "probable_cases_new": prob_new,
                 }
     with open(os.path.join(TMP_DIR, "Testing2.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -58,8 +62,12 @@ def get_data(date_range):
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row["Date"] in data:
-                data[row["Date"]]["deaths_total"] = int(row["DeathsConfTotal"])
-                data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"])
+                data[row["Date"]]["deaths_total"] = int(row["DeathsConfTotal"]) + int(
+                    row["DeathsProbTotal"]
+                )
+                data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"]) + int(
+                    row["DeathsProbNew"]
+                )
     return data
 
 
@@ -134,10 +142,14 @@ def get_next_refname(refname):
 def create_table(date_range, data, base_refname, last_wednesday):
     rows = []
     refname = base_refname
-    for date in reversed(date_range):
+    prev_day_str = (date_range[0] - timedelta(days=1)).strftime(DAY_FMT)
+    rows.append(
+        "{} hospitalized: {}".format(prev_day_str, data[prev_day_str]["hospitalized"]),
+    )
+    for date in date_range:
         date_str = date.strftime(DAY_FMT)
         row = create_row(date, data[date_str], refname, last_wednesday)
-        rows.insert(0, row)
+        rows.append(row)
         refname = get_next_refname(refname)
     with open(os.path.join(OUT_DIR, "cases_by_category.txt"), "w+") as f:
         f.write("".join(rows))

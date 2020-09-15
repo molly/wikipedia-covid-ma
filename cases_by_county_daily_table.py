@@ -114,7 +114,9 @@ def get_data(today):
         c["county"]: {"population": c["population"], "cases": 0, "deaths": 0}
         for c in COUNTIES
     }
-    with open(os.path.join(TMP_DIR, "County.csv"), "r") as csvfile:
+    with open(
+        os.path.join(TMP_DIR, "County.csv"), "r", encoding="utf-8-sig"
+    ) as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             if row["Date"] == today_str:
@@ -122,10 +124,12 @@ def get_data(today):
                     county = "Dukes and Nantucket"
                 else:
                     county = row["County"]
-                if row["Count"]:
-                    data[county]["cases"] += int(row["Count"])
-                if row["Deaths"]:
-                    data[county]["deaths"] += int(row["Deaths"])
+                if row["Total Confirmed Cases"]:
+                    data[county]["cases"] += int(row["Total Confirmed Cases"])
+                if row["Total Probable and Confirmed Deaths"]:
+                    data[county]["deaths"] += int(
+                        row["Total Probable and Confirmed Deaths"]
+                    )
         return data
 
 
