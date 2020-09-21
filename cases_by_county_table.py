@@ -21,7 +21,6 @@
 import csv
 import os
 from constants import *
-from cases_by_category_table import get_next_refname
 
 COUNTIES = [
     "Barnstable",
@@ -69,7 +68,7 @@ def get_data(date_range):
     return data
 
 
-def create_row(d, data, refname):
+def create_row(d, data):
     row = '|-\n| style="text-align:left;" | {}\n'.format(d.strftime("%B&nbsp;%-d"))
     row += '| style="border-left: 2px solid #888;" '
     for county in COUNTIES:
@@ -77,22 +76,18 @@ def create_row(d, data, refname):
     row += '| style="border-left: 2px solid #888;" '
     for county in COUNTIES:
         row += "| {}\n".format(data[county]["deaths"])
-    row += '| style="border-left: 2px solid #888;" '
-    row += '|<ref name="{}" group="note" />\n'.format(refname)
     return row
 
 
-def create_table(date_range, data, base_refname):
+def create_table(date_range, data):
     rows = []
-    refname = base_refname
-    for d in reversed(date_range):
+    for d in date_range:
         date_str = d.strftime(DAY_FMT)
-        rows.insert(0, create_row(d, data[date_str], refname))
-        refname = get_next_refname(refname)
+        rows.append(create_row(d, data[date_str]))
     with open(os.path.join(OUT_DIR, "cases_by_county.txt"), "w+") as f:
         f.write("".join(rows))
 
 
-def create_cases_by_county_table(date_range, args):
+def create_cases_by_county_table(date_range):
     data = get_data(date_range)
-    create_table(date_range, data, args["refname"])
+    create_table(date_range, data)

@@ -35,11 +35,6 @@ from statistics import create_statistics_graphs
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "refname",
-        help="The name for the reference referring to today's dataset",
-        type=str,
-    )
-    parser.add_argument(
         "--no-manual",
         help="skip manually inputting extra data (will result in placeholders in output"
         + "files that will need to be replaced)",
@@ -68,13 +63,11 @@ def parse_args():
         "date. Format YYYY-MM-DD.",
     )
     args = parser.parse_args()
-    refname = args.refname
     dev = args.dev
     nomanual = args.no_manual
     today = args.date if isinstance(args.date, date) else date.fromisoformat(args.date)
     fromdate = date.fromisoformat(args.fromdate) if args.fromdate else None
     return {
-        "refname": refname,
         "nomanual": nomanual,
         "dev": dev,
         "today": today,
@@ -197,8 +190,8 @@ def run():
         None if args["nomanual"] else get_manual_data(args["today"], last_wednesday)
     )
     create_infobox_and_barchart(date_range, args, last_wednesday, manual_data)
-    create_cases_by_category_table(date_range, args, last_wednesday, manual_data)
-    create_cases_by_county_table(date_range, args)
+    create_cases_by_category_table(date_range, last_wednesday, manual_data)
+    create_cases_by_county_table(date_range)
     create_daily_county_table(
         args["today"], manual_data["recoveries"] if manual_data else None
     )

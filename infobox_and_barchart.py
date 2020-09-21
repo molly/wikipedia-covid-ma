@@ -84,6 +84,7 @@ def create_infobox(data, today, last_wednesday, manual_data):
     lines = []
     today_str = today.strftime(DAY_FMT)
     today_citation = today.strftime(CITATION_DATE_FORMAT)
+    last_wednesday_citation = last_wednesday.strftime(CITATION_DATE_FORMAT)
     asof = "{{{{as of|{}|alt=as of {}}}}}".format(
         today.strftime("%Y|%m|%d"), today.strftime(AS_OF_ALT_FMT)
     )
@@ -131,10 +132,15 @@ def create_infobox(data, today, last_wednesday, manual_data):
         )
     )
     lines.append(
-        '| recovery_cases  = {} {}<ref group="note" name="MDPH-Weekly-{}"/>'.format(
+        '| recovery_cases  = {} {}<ref name="MDPH-current-week">{{{{Cite web|url='
+        "https://www.mass.gov/doc/weekly-covid-19-public-health-report-{}/download"
+        "|title=Weekly COVID-19 Public Health Report|date={}|website=Government of "
+        "Massachusetts|access-date={}}}}}</ref>".format(
             comma_separate(manual_data["recoveries"]) if manual_data else "RECOVERIES",
             asof_last_wednesday,
-            last_wednesday.strftime("%m-%d"),
+            last_wednesday.strftime(URL_DATE_FMT).lower(),
+            last_wednesday_citation,
+            today_citation,
         )
     )
     lines.append(
@@ -177,12 +183,22 @@ def create_bar_chart(data, date_range, last_wednesday, manual_data):
 
 def get_addl_info(data, today):
     today_str = today.strftime(DAY_FMT)
+    today_url_fmt = today.strftime(URL_DATE_FMT).lower()
+    today_citation_fmt = today.strftime(CITATION_DATE_FORMAT)
     addl = "Tests:\n\tMolecular: {:,} tests on {:,} individuals".format(
         data[today_str]["total_molecular_tests"],
         data[today_str]["individual_molecular_tests"],
     )
     addl += "\n\tAntibody: {:,}".format(data[today_str]["antibody_tests"])
     addl += "\n\tAntigen: {:,}".format(data[today_str]["antigen_tests"])
+    addl += (
+        '\n\n<ref name="MDPH-current-day">{{{{Cite web|url=https://www.mass.gov/doc/'
+        "covid-19-dashboard-{url_date}/download|title=COVID-19 Dashboard – {cite_date}"
+        "|date={cite_date}|website=Massachusetts Department of Public Health|"
+        "url-status=live|access-date={cite_date}}}}}</ref>".format(
+            url_date=today_url_fmt, cite_date=today_citation_fmt
+        )
+    )
     addl += "\n\nLong-term care:\n\tDeaths: {:,}".format(data[today_str]["ltc_deaths"])
     addl += "\n\tCases among residents & workers: {:,}".format(
         data[today_str]["ltc_cases"]

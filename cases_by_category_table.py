@@ -20,10 +20,8 @@
 
 import csv
 import os
-import re
 from datetime import date, timedelta
 from constants import *
-from utils import comma_separate
 
 
 def get_data(date_range):
@@ -96,7 +94,7 @@ def prefix_number(val):
     return "+" + str(val) if val > 0 else val
 
 
-def create_row(d, data, refname, last_wednesday, manual_data):
+def create_row(d, data, last_wednesday, manual_data):
     pretty_date = d.strftime(CITATION_DATE_FORMAT)
     url = CITATION_URL.format(d.strftime(URL_DATE_FMT).lower())
     title = CITATION_TITLE.format(pretty_date)
@@ -133,50 +131,31 @@ def create_row(d, data, refname, last_wednesday, manual_data):
         if manual_data and d >= last_wednesday
         else "TOTAL QUARANTINED"
     )
-    row += '|{}\n| style="border-left: 2px solid #888;" |'.format(
+    row += "|{}\n".format(
         manual_data["quar_released"]
         if manual_data and d >= last_wednesday
         else "RELEASED FROM QUARANTINE"
     )
-    row += '<ref group="note" name="{}">'.format(refname)
-    row += "{{{{Cite web|url={}|title={}|last=|first=|".format(url, title)
-    row += "date={}|website=Massachusetts Department of Public ".format(pretty_date)
-    row += "Health|url-status=live|archive-url=|archive-date=|"
-    row += "access-date={}}}}}</ref>".format(pretty_today)
-    row += '<ref group="note" name="MDPH-Weekly-{:02d}-{:02d}"/>\n'.format(
-        last_wednesday.month, last_wednesday.day
-    )
     return row
 
 
-def get_next_refname(refname):
-    if not refname:
-        return ""
-    match = re.match(r":(\d+)", refname)
-    if match:
-        return ":{}".format(int(match.group(1)) - 1)
-    return ""
-
-
-def create_table(date_range, data, base_refname, last_wednesday, manual_data):
+def create_table(date_range, data, last_wednesday, manual_data):
     rows = []
-    refname = base_refname
     prev_day_str = (date_range[0] - timedelta(days=1)).strftime(DAY_FMT)
     rows.append(
-        "\n\n\n{} hospitalized: {}".format(
+        "{} hospitalized: {}\n\n".format(
             prev_day_str, data[prev_day_str]["hospitalized"]
         ),
     )
-    for d in reversed(date_range):
+    for d in date_range:
         date_str = d.strftime(DAY_FMT)
-        row = create_row(d, data[date_str], refname, last_wednesday, manual_data)
-        rows.insert(0, row)
-        refname = get_next_refname(refname)
+        row = create_row(d, data[date_str], last_wednesday, manual_data)
+        rows.append(row)
     with open(os.path.join(OUT_DIR, "cases_by_category.txt"), "w+") as f:
         f.write("".join(rows))
 
 
-def create_cases_by_category_table(date_range, args, last_wednesday, manual_data):
+def create_cases_by_category_table(date_range, last_wednesday, manual_data):
     data = get_data(date_range)
     calculate_columns(date_range, data)
-    create_table(date_range, data, args["refname"], last_wednesday, manual_data)
+    create_table(date_range, data, last_wednesday, manual_data)
