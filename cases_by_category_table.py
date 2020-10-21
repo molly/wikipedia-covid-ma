@@ -94,7 +94,7 @@ def prefix_number(val):
     return "+" + str(val) if val > 0 else val
 
 
-def create_row(d, data, last_wednesday, manual_data):
+def create_row(d, data, last_thursday, manual_data):
     pretty_date = d.strftime(CITATION_DATE_FORMAT)
     url = CITATION_URL.format(d.strftime(URL_DATE_FMT).lower())
     title = CITATION_TITLE.format(pretty_date)
@@ -123,23 +123,23 @@ def create_row(d, data, last_wednesday, manual_data):
     row += "| {}%\n".format(prefix_number(data["perc_new_deaths"]))
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(
         manual_data["recoveries"]
-        if manual_data and d >= last_wednesday
+        if manual_data and d >= last_thursday
         else "RECOVERIES"
     )
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(
         manual_data["quar_total"]
-        if manual_data and d >= last_wednesday
+        if manual_data and d >= last_thursday
         else "TOTAL QUARANTINED"
     )
     row += "|{}\n".format(
         manual_data["quar_released"]
-        if manual_data and d >= last_wednesday
+        if manual_data and d >= last_thursday
         else "RELEASED FROM QUARANTINE"
     )
     return row
 
 
-def create_table(date_range, data, last_wednesday, manual_data):
+def create_table(date_range, data, last_thursday, manual_data):
     rows = []
     prev_day_str = (date_range[0] - timedelta(days=1)).strftime(DAY_FMT)
     rows.append(
@@ -149,13 +149,13 @@ def create_table(date_range, data, last_wednesday, manual_data):
     )
     for d in date_range:
         date_str = d.strftime(DAY_FMT)
-        row = create_row(d, data[date_str], last_wednesday, manual_data)
+        row = create_row(d, data[date_str], last_thursday, manual_data)
         rows.append(row)
     with open(os.path.join(OUT_DIR, "cases_by_category.txt"), "w+") as f:
         f.write("".join(rows))
 
 
-def create_cases_by_category_table(date_range, last_wednesday, manual_data):
+def create_cases_by_category_table(date_range, last_thursday, manual_data):
     data = get_data(date_range)
     calculate_columns(date_range, data)
-    create_table(date_range, data, last_wednesday, manual_data)
+    create_table(date_range, data, last_thursday, manual_data)

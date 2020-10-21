@@ -105,11 +105,11 @@ def fetch_data(args):
         )
 
 
-def get_manual_data(today, last_wednesday):
+def get_manual_data(today, last_thursday):
     """Some data isn't included in the CSVs but can be pulled from other reports."""
     print(
         "From the weekly report: https://www.mass.gov/doc/weekly-covid-19-public-health"
-        "-report-{}/download".format(last_wednesday.strftime(URL_DATE_FMT).lower())
+        "-report-{}/download".format(last_thursday.strftime(URL_DATE_FMT).lower())
     )
     quar_released = input(
         "Total individuals who have completed monitoring (no longer in quarantine): "
@@ -168,29 +168,29 @@ def get_date_range(today, fromdate):
     return dates
 
 
-def get_last_wednesday(today):
-    """Get the date of the most recent Wednesday (including today's date, if today is
-    a Wednesday. This is used to refer to the weekly data, which is published every
-    Wednesday."""
+def get_last_thursday(today):
+    """Get the date of the most recent Thursday (including today's date, if today is
+    a Thursday. This is used to refer to the weekly data, which is published every
+    Thursday."""
     todays_day_of_week = today.weekday()
-    if todays_day_of_week == 2:
+    if todays_day_of_week == 3:
         return today
     else:
-        offset = (todays_day_of_week - 2) % 7
+        offset = (todays_day_of_week - 3) % 7
         return today - timedelta(days=offset)
 
 
 def run():
     args = parse_args()
     date_range = get_date_range(args["today"], args["fromdate"])
-    last_wednesday = get_last_wednesday(args["today"])
+    last_thursday = get_last_thursday(args["today"])
     set_up_folders(args)
     fetch_data(args)
     manual_data = (
-        None if args["nomanual"] else get_manual_data(args["today"], last_wednesday)
+        None if args["nomanual"] else get_manual_data(args["today"], last_thursday)
     )
-    create_infobox_and_barchart(date_range, args, last_wednesday, manual_data)
-    create_cases_by_category_table(date_range, last_wednesday, manual_data)
+    create_infobox_and_barchart(date_range, args, last_thursday, manual_data)
+    create_cases_by_category_table(date_range, last_thursday, manual_data)
     create_cases_by_county_table(date_range)
     create_daily_county_table(
         args["today"], manual_data["recoveries"] if manual_data else None
