@@ -22,12 +22,14 @@ import csv
 import os
 from datetime import date, timedelta
 from constants import *
+from excel import get_excel_data_for_date_range
 
 
 def get_data(date_range):
     # Also grab data for the day before, so we can calculate % change
     prev_day = date_range[0] - timedelta(days=1)
-    data = {d.strftime(DAY_FMT): {} for d in [prev_day] + date_range}
+    date_range_with_prev_day = [prev_day] + date_range
+    data = {d.strftime(DAY_FMT): {} for d in date_range_with_prev_day}
     with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -48,15 +50,14 @@ def get_data(date_range):
             if row["Date"] in data:
                 data[row["Date"]]["testing_total"] = int(row["Molecular Total"])
                 data[row["Date"]]["testing_new"] = int(row["Molecular New"])
-    with open(
-        os.path.join(TMP_DIR, "Hospitalization from Hospitals.csv"), "r"
-    ) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["hospitalized"] = int(
-                    row["Total number of COVID patients in hospital today"]
-                )
+    hosp_data = get_excel_data_for_date_range(
+        "Hospitalization from Hospitals.xlsx", date_range_with_prev_day
+    )
+    for d in date_range_with_prev_day:
+        if d in hosp_data:
+            data[d.strftime(DAY_FMT)]["hospitalized"] = hosp_data[d][
+                "Total number of confirmed COVID patients in hospital today"
+            ]
     with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:

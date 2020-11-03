@@ -66,7 +66,6 @@ def get_data(date_range, today):
                 data[today_str]["individual_molecular_tests"] = int(
                     row["Molecular Total"]
                 )
-                data[today_str]["antibody_tests"] = int(row["Serology Total"])
                 data[today_str]["antigen_tests"] = int(row["Antigen Total"])
     with open(os.path.join(TMP_DIR, "LTC Facilities.csv"), "r") as ltc_csv:
         reader = csv.DictReader(ltc_csv)
@@ -189,7 +188,6 @@ def get_addl_info(data, today):
         data[today_str]["total_molecular_tests"],
         data[today_str]["individual_molecular_tests"],
     )
-    addl += "\n\tAntibody: {:,}".format(data[today_str]["antibody_tests"])
     addl += "\n\tAntigen: {:,}".format(data[today_str]["antigen_tests"])
     addl += (
         '\n\n<ref name="MDPH-current-day">{{{{Cite web|url=https://www.mass.gov/doc/'
