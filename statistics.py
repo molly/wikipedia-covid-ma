@@ -22,6 +22,7 @@ import csv
 import os
 from constants import *
 from datetime import date, timedelta
+from excel import get_excel_data_for_date_range
 
 
 def create_date_list(today):
@@ -51,14 +52,13 @@ def safe_sum(v1, v2):
 def create_cases_charts(date_list):
     date_str_list = [d.strftime(DAY_FMT) for d in date_list]
     data = {d: {} for d in date_str_list}
-    with open(os.path.join(TMP_DIR, "CasesByDate.csv"), "r") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]] = {
-                    "total": int(row["Positive Total"]),
-                    "new": int(row["Positive New"]),
-                }
+
+    case_data = get_excel_data_for_date_range("CasesByDate.xlsx", date_list)
+    for d in date_list:
+        data[d.strftime(DAY_FMT)] = {
+            "total": int(case_data[d]["Positive Total"]),
+            "new": int(case_data[d]["Positive New"]),
+        }
 
     out_str = "CASES DATES:\n"
     out_str += ", ".join([d.strftime(STATISTICS_DAY_FMT) for d in date_list])
@@ -75,14 +75,14 @@ def create_deaths_charts(date_list):
     deaths_date_list = date_list[:-2]
     date_str_list = [d.strftime(DAY_FMT) for d in deaths_date_list]
     data = {d: {} for d in date_str_list}
-    with open(os.path.join(TMP_DIR, "DateofDeath.csv"), "r") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date of Death"] in data:
-                data[row["Date of Death"]] = {
-                    "total": int(row["Confirmed Total"]),
-                    "new": int(row["Confirmed Deaths"]),
-                }
+
+    death_data = get_excel_data_for_date_range("DateofDeath.xlsx", date_list)
+    for d in date_list:
+        if d in death_data:
+            data[d.strftime(DAY_FMT)] = {
+                "total": int(death_data[d]["Confirmed Total"]),
+                "new": int(death_data[d]["Confirmed Deaths"]),
+            }
 
     # Zero out the days going back to February 26
     for d in date_str_list:

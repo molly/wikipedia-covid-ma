@@ -22,12 +22,14 @@ import csv
 import os
 from datetime import date, timedelta
 from constants import *
+from excel import get_excel_data_for_date_range
 
 
 def get_data(date_range):
     # Also grab data for the day before, so we can calculate % change
     prev_day = date_range[0] - timedelta(days=1)
-    data = {d.strftime(DAY_FMT): {} for d in [prev_day] + date_range}
+    date_range_with_prev_day = [prev_day] + date_range
+    data = {d.strftime(DAY_FMT): {} for d in date_range_with_prev_day}
     with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -48,15 +50,14 @@ def get_data(date_range):
             if row["Date"] in data:
                 data[row["Date"]]["testing_total"] = int(row["Molecular Total"])
                 data[row["Date"]]["testing_new"] = int(row["Molecular New"])
-    with open(
-        os.path.join(TMP_DIR, "Hospitalization from Hospitals.csv"), "r"
-    ) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["hospitalized"] = int(
-                    row["Total number of COVID patients in hospital today"]
-                )
+    hosp_data = get_excel_data_for_date_range(
+        "Hospitalization from Hospitals.xlsx", date_range_with_prev_day
+    )
+    for d in date_range_with_prev_day:
+        if d in hosp_data:
+            data[d.strftime(DAY_FMT)]["hospitalized"] = hosp_data[d][
+                "Total number of confirmed COVID patients in hospital today"
+            ]
     with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -94,7 +95,7 @@ def prefix_number(val):
     return "+" + str(val) if val > 0 else val
 
 
-def create_row(d, data, last_thursday, manual_data):
+def create_row(d, data, last_thursday, manual_data, recoveries):
     pretty_date = d.strftime(CITATION_DATE_FORMAT)
     url = CITATION_URL.format(d.strftime(URL_DATE_FMT).lower())
     title = CITATION_TITLE.format(pretty_date)
@@ -122,9 +123,7 @@ def create_row(d, data, last_thursday, manual_data):
     row += "| {}\n".format(prefix_number(data["deaths_new"]))
     row += "| {}%\n".format(prefix_number(data["perc_new_deaths"]))
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(
-        manual_data["recoveries"]
-        if manual_data and d >= last_thursday
-        else "RECOVERIES"
+        recoveries if recoveries else ""
     )
     row += '| style="border-left: 2px solid #888;" |{}\n'.format(
         manual_data["quar_total"]
@@ -139,7 +138,7 @@ def create_row(d, data, last_thursday, manual_data):
     return row
 
 
-def create_table(date_range, data, last_thursday, manual_data):
+def create_table(date_range, data, last_thursday, manual_data, recoveries):
     rows = []
     prev_day_str = (date_range[0] - timedelta(days=1)).strftime(DAY_FMT)
     rows.append(
@@ -149,13 +148,15 @@ def create_table(date_range, data, last_thursday, manual_data):
     )
     for d in date_range:
         date_str = d.strftime(DAY_FMT)
-        row = create_row(d, data[date_str], last_thursday, manual_data)
+        row = create_row(
+            d, data[date_str], last_thursday, manual_data, recoveries[date_str]
+        )
         rows.append(row)
     with open(os.path.join(OUT_DIR, "cases_by_category.txt"), "w+") as f:
         f.write("".join(rows))
 
 
-def create_cases_by_category_table(date_range, last_thursday, manual_data):
+def create_cases_by_category_table(date_range, last_thursday, manual_data, recoveries):
     data = get_data(date_range)
     calculate_columns(date_range, data)
-    create_table(date_range, data, last_thursday, manual_data)
+    create_table(date_range, data, last_thursday, manual_data, recoveries)
