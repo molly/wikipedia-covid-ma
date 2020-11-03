@@ -22,6 +22,7 @@ import csv
 import os
 from datetime import timedelta
 from constants import *
+from excel import get_excel_data_for_date_range
 from utils import comma_separate
 
 
@@ -76,6 +77,19 @@ def get_data(date_range, today):
                     row["Cases in Residents/Healthcare Workers of LTCFs"]
                 )
                 data[today_str]["ltc_facilities"] = int(row["facilities"])
+
+    # For hospitalizations, the data from the previous day in the spreadsheet is
+    # displayed for that day
+    yesterday = today - timedelta(days=1)
+    hosp_data = get_excel_data_for_date_range(
+        "Hospitalization from Hospitals.xlsx", [yesterday]
+    )
+    data[today_str]["hosp_current"] = hosp_data[yesterday][
+        "Total number of confirmed COVID patients in hospital today"
+    ]
+    data[today_str]["icu_current"] = hosp_data[yesterday]["Confirmed ICU"]
+    data[today_str]["vent_current"] = hosp_data[yesterday]["Confirmed intubated"]
+
     return data
 
 
@@ -103,30 +117,20 @@ def create_infobox(data, today, last_thursday, manual_data):
         )
     )
     lines.append(
-        "| hospitalized_cases = {} (current)<br>{} (cumulative)<br />{}"
-        '<ref name="MDPH-Cases"/>'.format(
-            comma_separate(manual_data["hosp_current"])
-            if manual_data
-            else "CURRENT HOSP",
-            comma_separate(manual_data["hosp_cumulative"])
-            if manual_data
-            else "CUMULATIVE HOSP",
+        '| hospitalized_cases = {} (current) {}<ref name="MDPH-Cases"/>'.format(
+            data[today_str]["hosp_current"],
             asof,
         )
     )
     lines.append(
         "| critical_cases  = {} (current) {}".format(
-            comma_separate(manual_data["icu_current"])
-            if manual_data
-            else "CURRENT ICU",
+            data[today_str]["icu_current"],
             asof,
         )
     )
     lines.append(
         "| ventilator_cases = {} (current) {}".format(
-            comma_separate(manual_data["vent_current"])
-            if manual_data
-            else "CURRENT VENT",
+            data[today_str]["vent_current"],
             asof,
         )
     )

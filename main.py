@@ -116,22 +116,10 @@ def get_manual_data(today, last_thursday):
     )
     quar_total = input("Total individuals subject to quarantine: ")
     recoveries = input("Total cases released from isolation: ")
-    print(
-        "\n\nFrom the daily report: https://www.mass.gov/doc/covid-19-dashboard"
-        "-{}/download".format(today.strftime(URL_DATE_FMT).lower())
-    )
-    hosp_current = input("Currently hospitalized: ")
-    icu_current = input("Currently in ICU: ")
-    vent_current = input("Currently intubated: ")
-    hosp_cumulative = input("Cumulative hospitalizations: ")
     return {
         "quar_total": int(quar_total),
         "quar_released": int(quar_released),
         "recoveries": int(recoveries),
-        "hosp_current": int(hosp_current),
-        "icu_current": int(icu_current),
-        "vent_current": int(vent_current),
-        "hosp_cumulative": int(hosp_cumulative),
     }
 
 
