@@ -93,16 +93,12 @@ def get_data(date_range, today):
     return data
 
 
-def create_infobox(data, today, last_thursday, manual_data):
+def create_infobox(data, today, recoveries):
     lines = []
     today_str = today.strftime(DAY_FMT)
     today_citation = today.strftime(CITATION_DATE_FORMAT)
-    last_thursday_citation = last_thursday.strftime(CITATION_DATE_FORMAT)
     asof = "{{{{as of|{}|alt=as of {}}}}}".format(
         today.strftime("%Y|%m|%d"), today.strftime(AS_OF_ALT_FMT)
-    )
-    asof_last_thursday = "{{{{as of|{}|alt=as of {}}}}}".format(
-        last_thursday.strftime("%Y|%m|%d"), last_thursday.strftime(AS_OF_ALT_FMT)
     )
 
     lines.append(
@@ -135,15 +131,11 @@ def create_infobox(data, today, last_thursday, manual_data):
         )
     )
     lines.append(
-        '| recovery_cases  = {} {}<ref name="MDPH-current-week">{{{{Cite web|url='
-        "https://www.mass.gov/doc/weekly-covid-19-public-health-report-{}/download"
-        "|title=Weekly COVID-19 Public Health Report|date={}|website=Government of "
-        "Massachusetts|access-date={}}}}}</ref>".format(
-            comma_separate(manual_data["recoveries"]) if manual_data else "RECOVERIES",
-            asof_last_thursday,
-            last_thursday.strftime(URL_DATE_FMT).lower(),
-            last_thursday_citation,
-            today_citation,
+        '| recovery_cases  = {} {}<ref name="MDPH-Cases"/>'.format(
+            comma_separate(recoveries[today_str])
+            if recoveries[today_str]
+            else "RECOVERIES",
+            asof,
         )
     )
     lines.append(
@@ -154,7 +146,7 @@ def create_infobox(data, today, last_thursday, manual_data):
     return "\n".join(lines)
 
 
-def create_bar_chart(data, date_range, last_thursday, manual_data):
+def create_bar_chart(data, date_range, recoveries):
     rows = []
     for date in date_range:
         prev_day = (date - timedelta(days=1)).strftime(DAY_FMT)
@@ -170,9 +162,7 @@ def create_bar_chart(data, date_range, last_thursday, manual_data):
             "{change:.2f}%".format(
                 date=date.strftime(BAR_CHART_FMT),
                 deaths=data[date_str]["deaths"],
-                recov=manual_data["recoveries"]
-                if manual_data and date >= last_thursday
-                else "RECOVERIES",
+                recov=recoveries[date_str] if recoveries[date_str] else "RECOVERIES",
                 conf=data[date_str]["confirmed_cases"],
                 prob=data[date_str]["probable_cases"],
                 total=data[date_str]["total_cases"],
@@ -219,9 +209,9 @@ def write_file(infobox, bar_chart, addl_info_for_article_body):
         f.write(infobox + "\n\n\n" + bar_chart + "\n\n\n" + addl_info_for_article_body)
 
 
-def create_infobox_and_barchart(date_range, args, last_thursday, manual_data):
+def create_infobox_and_barchart(date_range, args, recoveries):
     data = get_data(date_range, args["today"])
-    infobox = create_infobox(data, args["today"], last_thursday, manual_data)
-    bar_chart = create_bar_chart(data, date_range, last_thursday, manual_data)
+    infobox = create_infobox(data, args["today"], recoveries)
+    bar_chart = create_bar_chart(data, date_range, recoveries)
     addl_info_for_article_body = get_addl_info(data, args["today"])
     write_file(infobox, bar_chart, addl_info_for_article_body)

@@ -19,10 +19,12 @@
 # SOFTWARE.
 
 import argparse
+import csv
 import os
 import requests
 import zipfile
 from datetime import date, timedelta
+from excel import get_excel_data_for_date_range
 
 from constants import *
 from infobox_and_barchart import create_infobox_and_barchart
@@ -115,12 +117,45 @@ def get_manual_data(today, last_thursday):
         "Total individuals who have completed monitoring (no longer in quarantine): "
     )
     quar_total = input("Total individuals subject to quarantine: ")
-    recoveries = input("Total cases released from isolation: ")
     return {
         "quar_total": int(quar_total),
         "quar_released": int(quar_released),
-        "recoveries": int(recoveries),
     }
+
+
+def get_recoveries(date_range):
+    data = {
+        d.strftime(DAY_FMT): {
+            "confirmed_cases": None,
+            "est_active_cases": None,
+            "confirmed_deaths": None,
+        }
+        for d in date_range
+    }
+    with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as cases_csv:
+        reader = csv.DictReader(cases_csv)
+        for row in reader:
+            if row["Date"] in data:
+                data[row["Date"]]["confirmed_cases"] = int(row["Positive Total"])
+                if row["Estimated active cases"]:
+                    data[row["Date"]]["est_active_cases"] = int(
+                        row["Estimated active cases"]
+                    )
+                    break
+    with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as deaths_csv:
+        reader = csv.DictReader(deaths_csv)
+        for row in reader:
+            if row["Date"] in data:
+                data[row["Date"]]["confirmed_deaths"] = int(row["DeathsConfTotal"])
+    result = {d.strftime(DAY_FMT): None for d in date_range}
+    for date_str, day in data.items():
+        if day["est_active_cases"]:
+            result[date_str] = (
+                day["confirmed_cases"]
+                - day["est_active_cases"]
+                - day["confirmed_deaths"]
+            )
+    return result
 
 
 def set_up_folders(args):
@@ -177,11 +212,12 @@ def run():
     manual_data = (
         None if args["nomanual"] else get_manual_data(args["today"], last_thursday)
     )
-    create_infobox_and_barchart(date_range, args, last_thursday, manual_data)
-    create_cases_by_category_table(date_range, last_thursday, manual_data)
+    recoveries = get_recoveries(date_range)
+    create_infobox_and_barchart(date_range, args, recoveries)
+    create_cases_by_category_table(date_range, last_thursday, manual_data, recoveries)
     create_cases_by_county_table(date_range)
     create_daily_county_table(
-        args["today"], manual_data["recoveries"] if manual_data else None
+        args["today"], recoveries[args["today"].strftime(DAY_FMT)]
     )
     create_statistics_graphs(args)
 
