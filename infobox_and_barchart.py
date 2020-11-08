@@ -93,12 +93,15 @@ def get_data(date_range, today):
     return data
 
 
-def create_infobox(data, today, recoveries):
+def create_infobox(data, today, last_thursday, manual_data, recoveries):
     lines = []
     today_str = today.strftime(DAY_FMT)
     today_citation = today.strftime(CITATION_DATE_FORMAT)
     asof = "{{{{as of|{}|alt=as of {}}}}}".format(
         today.strftime("%Y|%m|%d"), today.strftime(AS_OF_ALT_FMT)
+    )
+    as_of_last_thursday = "{{{{as of|{}|alt=as of {}}}}}".format(
+        last_thursday.strftime("%Y|%m|%d"), last_thursday.strftime(AS_OF_ALT_FMT)
     )
 
     lines.append(
@@ -113,21 +116,22 @@ def create_infobox(data, today, recoveries):
         )
     )
     lines.append(
-        '| hospitalized_cases = {} (current) {}<ref name="MDPH-Cases"/>'.format(
+        "| hospitalized_cases = {:,} (current, {})<br>{} (cumulative, {})"
+        '<ref name="MDPH-Cases"/>'.format(
             data[today_str]["hosp_current"],
             asof,
+            comma_separate(manual_data["total_hosp"]) if manual_data else "CUMULATIVE",
+            as_of_last_thursday,
         )
     )
     lines.append(
-        '| critical_cases  = {} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["icu_current"],
-            asof,
+        '| critical_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
+            data[today_str]["icu_current"], asof,
         )
     )
     lines.append(
-        '| ventilator_cases = {} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["vent_current"],
-            asof,
+        '| ventilator_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
+            data[today_str]["vent_current"], asof,
         )
     )
     lines.append(
@@ -209,9 +213,13 @@ def write_file(infobox, bar_chart, addl_info_for_article_body):
         f.write(infobox + "\n\n\n" + bar_chart + "\n\n\n" + addl_info_for_article_body)
 
 
-def create_infobox_and_barchart(date_range, args, recoveries):
+def create_infobox_and_barchart(
+    date_range, last_thursday, args, manual_data, recoveries
+):
     data = get_data(date_range, args["today"])
-    infobox = create_infobox(data, args["today"], recoveries)
+    infobox = create_infobox(
+        data, args["today"], last_thursday, manual_data, recoveries
+    )
     bar_chart = create_bar_chart(data, date_range, recoveries)
     addl_info_for_article_body = get_addl_info(data, args["today"])
     write_file(infobox, bar_chart, addl_info_for_article_body)

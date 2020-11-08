@@ -117,9 +117,11 @@ def get_manual_data(today, last_thursday):
         "Total individuals who have completed monitoring (no longer in quarantine): "
     )
     quar_total = input("Total individuals subject to quarantine: ")
+    total_hosp = input("Cumulative hospitalizations: ")
     return {
         "quar_total": int(quar_total),
         "quar_released": int(quar_released),
+        "total_hosp": int(total_hosp),
     }
 
 
@@ -213,7 +215,9 @@ def run():
         None if args["nomanual"] else get_manual_data(args["today"], last_thursday)
     )
     recoveries = get_recoveries(date_range)
-    create_infobox_and_barchart(date_range, args, recoveries)
+    create_infobox_and_barchart(
+        date_range, last_thursday, args, manual_data, recoveries
+    )
     create_cases_by_category_table(date_range, last_thursday, manual_data, recoveries)
     create_cases_by_county_table(date_range)
     create_daily_county_table(
