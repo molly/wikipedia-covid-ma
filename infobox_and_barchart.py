@@ -78,9 +78,23 @@ def get_data(date_range, today):
                 )
                 data[today_str]["ltc_facilities"] = int(row["facilities"])
 
-    # For hospitalizations, the data from the previous day in the spreadsheet is
-    # displayed for that day
+    # For hospitalizations and rolling averages, the data from previous days is the most
+    # recent
     yesterday = today - timedelta(days=1)
+    day_before_yesterday = today - timedelta(days=2)
+
+    case_data = get_excel_data_for_date_range("CasesByDate.xlsx", [yesterday])
+    data[today_str]["rolling_avg_cases"] = int(
+        round(case_data[yesterday]["7-day confirmed case average"])
+    )
+
+    death_data = get_excel_data_for_date_range(
+        "DateofDeath.xlsx", [day_before_yesterday]
+    )
+    data[today_str]["rolling_avg_deaths"] = int(
+        round(death_data[day_before_yesterday]["7-day confirmed death average"])
+    )
+
     hosp_data = get_excel_data_for_date_range(
         "Hospitalization from Hospitals.xlsx", [yesterday]
     )
@@ -182,7 +196,10 @@ def get_addl_info(data, today):
     today_str = today.strftime(DAY_FMT)
     today_url_fmt = today.strftime(URL_DATE_FMT).lower()
     today_citation_fmt = today.strftime(CITATION_DATE_FORMAT)
-    addl = "Tests:\n\tMolecular: {:,} tests on {:,} individuals".format(
+    addl = "Latest rolling averages (prev day for cases, 2 days ago for deaths):"
+    addl += "\n\tConfirmed cases: {:,}".format(data[today_str]["rolling_avg_cases"])
+    addl += "\n\tConfirmed deaths: {:,}".format(data[today_str]["rolling_avg_deaths"])
+    addl += "\n\nTests:\n\tMolecular: {:,} tests on {:,} individuals".format(
         data[today_str]["total_molecular_tests"],
         data[today_str]["individual_molecular_tests"],
     )
