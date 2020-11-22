@@ -43,7 +43,7 @@ def get_excel_data_for_date_range(filename, date_range, sheetname=None):
             headings = [x.value for x in row]
         else:
             dt = row[0].value
-            if dt.date() in date_range:
+            if dt and dt.date() in date_range:
                 result[dt.date()] = {
                     x: row[h_ind].value for h_ind, x in enumerate(headings)
                 }
