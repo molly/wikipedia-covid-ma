@@ -140,14 +140,12 @@ def create_infobox(data, today, last_thursday, manual_data, recoveries):
     )
     lines.append(
         '| critical_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["icu_current"],
-            asof,
+            data[today_str]["icu_current"], asof,
         )
     )
     lines.append(
         '| ventilator_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["vent_current"],
-            asof,
+            data[today_str]["vent_current"], asof,
         )
     )
     lines.append(
@@ -194,10 +192,12 @@ def create_bar_chart(data, date_range, recoveries):
     return "\n".join(rows)
 
 
-def get_addl_info(data, today):
+def get_addl_info(data, today, last_thursday):
     today_str = today.strftime(DAY_FMT)
     today_url_fmt = today.strftime(URL_DATE_FMT).lower()
     today_citation_fmt = today.strftime(CITATION_DATE_FORMAT)
+    thursday_url_fmt = last_thursday.strftime(URL_DATE_FMT).lower()
+    thursday_citation_fmt = last_thursday.strftime(CITATION_DATE_FORMAT)
     addl = "Latest rolling averages (prev day for cases, 2 days ago for deaths):"
     addl += "\n\tConfirmed cases: {:,}".format(data[today_str]["rolling_avg_cases"])
     addl += "\n\tConfirmed deaths: {:,}".format(data[today_str]["rolling_avg_deaths"])
@@ -212,6 +212,14 @@ def get_addl_info(data, today):
         "|date={cite_date}|website=Massachusetts Department of Public Health|"
         "url-status=live|access-date={cite_date}}}}}</ref>".format(
             url_date=today_url_fmt, cite_date=today_citation_fmt
+        )
+    )
+    addl += (
+        '\n\n<ref name="MDPH-current-week">{{{{Cite web|url=https://www.mass.gov/doc/'
+        "weekly-covid-19-public-health-report-{url_date}/download|title=Weekly COVID-19"
+        " Public Health Report|date={cite_date}|website=Massachusetts Department of"
+        " Public Health|url-status=live|access-date={cite_date}}}}}</ref>".format(
+            url_date=today_url_fmt, cite_date=thursday_citation_fmt
         )
     )
     addl += "\n\nLong-term care:\n\tDeaths: {:,}".format(data[today_str]["ltc_deaths"])
@@ -240,5 +248,5 @@ def create_infobox_and_barchart(
         data, args["today"], last_thursday, manual_data, recoveries
     )
     bar_chart = create_bar_chart(data, date_range, recoveries)
-    addl_info_for_article_body = get_addl_info(data, args["today"])
+    addl_info_for_article_body = get_addl_info(data, args["today"], last_thursday)
     write_file(infobox, bar_chart, addl_info_for_article_body)
