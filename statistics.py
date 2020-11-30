@@ -56,8 +56,8 @@ def create_cases_charts(date_list):
     case_data = get_excel_data_for_date_range("CasesByDate.xlsx", date_list)
     for d in date_list:
         data[d.strftime(DAY_FMT)] = {
-            "total": int(safe_lookup(case_data[d], "Positive Total", -1)),
-            "new": int(safe_lookup(case_data[d], "Positive New", -1)),
+            "total": safe_lookup(case_data[d], "Positive Total", -1),
+            "new": safe_lookup(case_data[d], "Positive New", -1),
         }
 
     out_str = "CASES DATES:\n"
@@ -80,8 +80,8 @@ def create_deaths_charts(date_list):
     for d in date_list:
         if d in death_data:
             data[d.strftime(DAY_FMT)] = {
-                "total": int(safe_lookup(death_data[d], "Confirmed Total", -1)),
-                "new": int(safe_lookup(death_data[d], "Confirmed Deaths", -1)),
+                "total": safe_lookup(death_data[d], "Confirmed Total", 0),
+                "new": safe_lookup(death_data[d], "Confirmed Deaths", 0),
             }
 
     # Zero out the days going back to February 26

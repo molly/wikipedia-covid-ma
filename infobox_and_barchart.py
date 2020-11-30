@@ -140,12 +140,14 @@ def create_infobox(data, today, last_thursday, manual_data, recoveries):
     )
     lines.append(
         '| critical_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["icu_current"], asof,
+            data[today_str]["icu_current"],
+            asof,
         )
     )
     lines.append(
         '| ventilator_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["vent_current"], asof,
+            data[today_str]["vent_current"],
+            asof,
         )
     )
     lines.append(

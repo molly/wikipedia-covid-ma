@@ -53,5 +53,9 @@ def get_excel_data_for_date_range(filename, date_range, sheetname=None):
 
 def safe_lookup(excel_dict, key, default=None):
     if type(excel_dict) is dict and key in excel_dict:
-        return excel_dict[key]
+        try:
+            val = int(excel_dict[key])
+            return val
+        except ValueError:
+            return excel_dict[key]
     return default
