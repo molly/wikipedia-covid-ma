@@ -36,7 +36,7 @@ def get_excel_data_for_date_range(filename, date_range, sheetname=None):
     sheet = wb[sheetname]
 
     headings = []
-    result = dict()
+    result = {d: None for d in date_range}
 
     for ind, row in enumerate(sheet.rows):
         if ind == 0:
@@ -49,3 +49,9 @@ def get_excel_data_for_date_range(filename, date_range, sheetname=None):
                 }
 
     return result
+
+
+def safe_lookup(excel_dict, key, default=None):
+    if type(excel_dict) is dict and key in excel_dict:
+        return excel_dict[key]
+    return default

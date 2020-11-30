@@ -22,7 +22,7 @@ import csv
 import os
 from datetime import date, timedelta
 from constants import *
-from excel import get_excel_data_for_date_range
+from excel import get_excel_data_for_date_range, safe_lookup
 
 
 def get_data(date_range):
@@ -55,9 +55,11 @@ def get_data(date_range):
     )
     for d in date_range_with_prev_day:
         if d in hosp_data:
-            data[d.strftime(DAY_FMT)]["hospitalized"] = hosp_data[d][
-                "Total number of confirmed COVID patients in hospital today"
-            ]
+            data[d.strftime(DAY_FMT)]["hospitalized"] = safe_lookup(
+                hosp_data[d],
+                "Total number of confirmed COVID patients in hospital today",
+                -1,
+            )
     with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
