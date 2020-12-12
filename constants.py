@@ -11,7 +11,7 @@ URL_DATE_FMT = "%B-%-d-%Y"
 DAY_FMT = "%-m/%-d/%Y"
 CITATION_DATE_FORMAT = "%B %-d, %Y"
 STATISTICS_DAY_FMT = "%b %-d"
-AS_OF_ALT_FMT = "%B %-d"
+AS_OF_ALT_FMT = "%B{{nbsp}}%-d"
 BAR_CHART_FMT = "%Y-%m-%d"
 
 CITATION_TITLE = "COVID-19 Dashboard – {}"
