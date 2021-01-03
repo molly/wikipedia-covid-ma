@@ -50,7 +50,7 @@ def safe_sum(v1, v2):
 
 
 def create_cases_charts(date_list):
-    date_str_list = [d.strftime(DAY_FMT) for d in date_list]
+    date_str_list = [d.strftime(DAY_FMT) for d in date_list[:-1]]
     data = {d: {} for d in date_str_list}
 
     case_data = get_excel_data_for_date_range("CasesByDate.xlsx", date_list)

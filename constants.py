@@ -10,7 +10,7 @@ NOMINATIM_URL = "https://nominatim.openstreetmap.org/search?city={}&state=massac
 URL_DATE_FMT = "%B-%-d-%Y"
 DAY_FMT = "%-m/%-d/%Y"
 CITATION_DATE_FORMAT = "%B %-d, %Y"
-STATISTICS_DAY_FMT = "%b %-d"
+STATISTICS_DAY_FMT = "%b %-d %Y"
 AS_OF_ALT_FMT = "%B{{nbsp}}%-d"
 BAR_CHART_FMT = "%Y-%m-%d"
 
