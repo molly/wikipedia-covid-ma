@@ -64,16 +64,27 @@ def parse_args():
         "today's data has not been published you probably want to use yesterday's "
         "date. Format YYYY-MM-DD.",
     )
+    parser.add_argument(
+        "-custom-url",
+        nargs="?",
+        default=None,
+        type=str,
+        help="A custom URL from which to download data for this date. Useful if the "
+        "state makes a typo in the URL and it can't be automatically generated as "
+        "normal.",
+    )
     args = parser.parse_args()
     dev = args.dev
     nomanual = args.no_manual
     today = args.date if isinstance(args.date, date) else date.fromisoformat(args.date)
     fromdate = date.fromisoformat(args.fromdate) if args.fromdate else None
+    customurl = args.custom_url
     return {
         "nomanual": nomanual,
         "dev": dev,
         "today": today,
         "fromdate": fromdate,
+        "customurl": customurl,
     }
 
 
@@ -84,7 +95,11 @@ def fetch_data(args):
         return
 
     url_date = args["today"].strftime(URL_DATE_FMT).lower()
-    url = URL.format(url_date)
+    if args["customurl"]:
+        url = args["customurl"]
+    else:
+        url = URL.format(url_date)
+
     r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
         zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")

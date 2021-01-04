@@ -50,18 +50,23 @@ def safe_sum(v1, v2):
 
 
 def create_cases_charts(date_list):
-    date_str_list = [d.strftime(DAY_FMT) for d in date_list[:-1]]
+    cases_date_list = date_list[:-1]
+    date_str_list = [d.strftime(DAY_FMT) for d in cases_date_list]
     data = {d: {} for d in date_str_list}
 
     case_data = get_excel_data_for_date_range("CasesByDate.xlsx", date_list)
     for d in date_list:
         data[d.strftime(DAY_FMT)] = {
-            "total": safe_lookup(case_data[d], "Positive Total", -1),
-            "new": safe_lookup(case_data[d], "Positive New", -1),
+            "total": safe_lookup(
+                case_data[d] if d in case_data else None, "Positive Total", -1
+            ),
+            "new": safe_lookup(
+                case_data[d] if d in case_data else None, "Positive New", -1
+            ),
         }
 
     out_str = "CASES DATES:\n"
-    out_str += ", ".join([d.strftime(STATISTICS_DAY_FMT) for d in date_list])
+    out_str += ", ".join([d.strftime(STATISTICS_DAY_FMT) for d in cases_date_list])
     out_str += "\n\nTOTAL CASES:\n"
     out_str += ", ".join([str(data[date_str]["total"]) for date_str in date_str_list])
     out_str += "\n\nNEW CASES:\n"
@@ -80,8 +85,12 @@ def create_deaths_charts(date_list):
     for d in date_list:
         if d in death_data:
             data[d.strftime(DAY_FMT)] = {
-                "total": safe_lookup(death_data[d], "Confirmed Total", 0),
-                "new": safe_lookup(death_data[d], "Confirmed Deaths", 0),
+                "total": safe_lookup(
+                    death_data[d] if d in death_data else None, "Confirmed Total", 0
+                ),
+                "new": safe_lookup(
+                    death_data[d] if d in death_data else None, "Confirmed Deaths", 0
+                ),
             }
 
     # Zero out the days going back to February 26
