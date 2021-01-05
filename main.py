@@ -86,23 +86,17 @@ def parse_args():
     }
 
 
-def fetch_data(args, xlsx_path):
+def fetch_data(args, url, xlsx_path):
     """Fetch the data for today and extract the necessary files."""
     if args["dev"] and len(os.listdir(TMP_DIR)) > 0:
         # If we're in dev mode and the files exist, we don't have to fetch them again.
         return
 
-    url_date = args["today"].strftime(URL_DATE_FMT).lower()
-    if args["url"]:
-        url = args["url"]
-    else:
-        url = URL.format(url_date)
-
     r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
         with open(xlsx_path, "wb+") as f:
             f.write(r.content)
-        print("Downloaded today's data to {}.xlsx".format(url_date))
+        print("Downloaded today's data to {}".format(xlsx_path))
     elif r.status_code == 404:
         raise Exception(
             "Data for this date was not found. This is probably because today's data "
@@ -117,7 +111,7 @@ def fetch_data(args, xlsx_path):
         )
 
 
-def get_manual_data(today, last_thursday):
+def get_manual_data(last_thursday):
     """Some data isn't included in the CSVs but can be pulled from other reports."""
     print(
         "From the weekly report: https://www.mass.gov/doc/weekly-covid-19-public-health"
@@ -222,16 +216,18 @@ def run():
     date_range = get_date_range(args["today"], args["fromdate"])
     last_thursday = get_last_thursday(args["today"])
     url_date = args["today"].strftime(URL_DATE_FMT).lower()
+    if args["url"]:
+        url = args["url"]
+    else:
+        url = URL.format(url_date)
     xlsx_path = os.path.join(TMP_DIR, url_date + ".xlsx")
 
     set_up_folders(args)
-    fetch_data(args, xlsx_path)
-    manual_data = (
-        None if args["nomanual"] else get_manual_data(args["today"], last_thursday)
-    )
+    fetch_data(args, url, xlsx_path)
+    manual_data = None if args["nomanual"] else get_manual_data(last_thursday)
     recoveries = get_recoveries(date_range, xlsx_path)
     create_infobox_and_barchart(
-        xlsx_path, date_range, last_thursday, args, manual_data, recoveries
+        xlsx_path, url, date_range, last_thursday, args, manual_data, recoveries
     )
     create_cases_by_category_table(
         xlsx_path, date_range, last_thursday, manual_data, recoveries

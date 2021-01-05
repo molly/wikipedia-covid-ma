@@ -143,12 +143,14 @@ def create_infobox(data, today, last_thursday, manual_data, recoveries):
     )
     lines.append(
         '| critical_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["icu_current"], asof,
+            data[today_str]["icu_current"],
+            asof,
         )
     )
     lines.append(
         '| ventilator_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["vent_current"], asof,
+            data[today_str]["vent_current"],
+            asof,
         )
     )
     lines.append(
@@ -195,7 +197,7 @@ def create_bar_chart(data, date_range, recoveries):
     return "\n".join(rows)
 
 
-def get_addl_info(data, today, last_thursday):
+def get_addl_info(data, url, today, last_thursday):
     today_str = today.strftime(DAY_FMT)
     today_url_fmt = today.strftime(URL_DATE_FMT).lower()
     today_citation_fmt = today.strftime(CITATION_DATE_FORMAT)
@@ -209,12 +211,10 @@ def get_addl_info(data, today, last_thursday):
     )
     addl += "\n\tAntigen: {:,}".format(data[today_str]["antigen_tests"])
     addl += (
-        '\n\n<ref name="MDPH-current-day">{{{{Cite web|url=https://www.mass.gov/doc/'
-        "covid-19-dashboard-{url_date}/download|title=COVID-19 Dashboard – {cite_date}"
-        "|date={cite_date}|website=Massachusetts Department of Public Health|"
-        "url-status=live|access-date={cite_date}}}}}</ref>".format(
-            url_date=today_url_fmt, cite_date=today_citation_fmt
-        )
+        '\n\n<ref name="MDPH-current-day">{{{{Cite web|url={url}|title=COVID-19 Raw '
+        "Data - {cite_date}|date={cite_date}|website=Massachusetts Department of "
+        "Public Health|url-status=live|access-date={cite_date}|format=XLSX}}}}"
+        "</ref>".format(url=url, cite_date=today_citation_fmt)
     )
     addl += (
         '\n\n<ref name="MDPH-current-week">{{{{Cite web|url=https://www.mass.gov/doc/'
@@ -243,12 +243,12 @@ def write_file(infobox, bar_chart, addl_info_for_article_body):
 
 
 def create_infobox_and_barchart(
-    xlsx_path, date_range, last_thursday, args, manual_data, recoveries
+    xlsx_path, url, date_range, last_thursday, args, manual_data, recoveries
 ):
     data = get_data(xlsx_path, date_range, args["today"])
     infobox = create_infobox(
         data, args["today"], last_thursday, manual_data, recoveries
     )
     bar_chart = create_bar_chart(data, date_range, recoveries)
-    addl_info_for_article_body = get_addl_info(data, args["today"], last_thursday)
+    addl_info_for_article_body = get_addl_info(data, url, args["today"], last_thursday)
     write_file(infobox, bar_chart, addl_info_for_article_body)
