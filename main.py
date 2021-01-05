@@ -65,7 +65,7 @@ def parse_args():
         "date. Format YYYY-MM-DD.",
     )
     parser.add_argument(
-        "-custom-url",
+        "-url",
         nargs="?",
         default=None,
         type=str,
@@ -78,13 +78,13 @@ def parse_args():
     nomanual = args.no_manual
     today = args.date if isinstance(args.date, date) else date.fromisoformat(args.date)
     fromdate = date.fromisoformat(args.fromdate) if args.fromdate else None
-    customurl = args.custom_url
+    url = args.url
     return {
         "nomanual": nomanual,
         "dev": dev,
         "today": today,
         "fromdate": fromdate,
-        "customurl": customurl,
+        "url": url,
     }
 
 
@@ -95,8 +95,8 @@ def fetch_data(args):
         return
 
     url_date = args["today"].strftime(URL_DATE_FMT).lower()
-    if args["customurl"]:
-        url = args["customurl"]
+    if args["url"]:
+        url = args["url"]
     else:
         url = URL.format(url_date)
 
