@@ -22,9 +22,8 @@ import argparse
 import csv
 import os
 import requests
-import zipfile
 from datetime import date, timedelta
-from excel import get_excel_data_for_date_range
+from excel import get_excel_data, get_excel_data_for_date_range
 
 from constants import *
 from infobox_and_barchart import create_infobox_and_barchart
@@ -88,7 +87,7 @@ def parse_args():
     }
 
 
-def fetch_data(args):
+def fetch_data(args, xlsx_path):
     """Fetch the data for today and extract the necessary files."""
     if args["dev"] and len(os.listdir(TMP_DIR)) > 0:
         # If we're in dev mode and the files exist, we don't have to fetch them again.
@@ -102,12 +101,9 @@ def fetch_data(args):
 
     r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
-        zipfile_path = os.path.join(TMP_DIR, url_date + ".zip")
-        with open(zipfile_path, "wb+") as f:
+        with open(xlsx_path, "wb+") as f:
             f.write(r.content)
-        print("Downloaded today's data to {}.zip".format(url_date))
-        with zipfile.ZipFile(zipfile_path, "r") as zipObj:
-            zipObj.extractall(TMP_DIR)
+        print("Downloaded today's data to {}.xlsx".format(url_date))
     elif r.status_code == 404:
         raise Exception(
             "Data for this date was not found. This is probably because today's data "
@@ -140,7 +136,7 @@ def get_manual_data(today, last_thursday):
     }
 
 
-def get_recoveries(date_range):
+def get_recoveries(date_range, xlsx_path):
     data = {
         d.strftime(DAY_FMT): {
             "confirmed_cases": None,
@@ -149,24 +145,21 @@ def get_recoveries(date_range):
         }
         for d in date_range
     }
-    with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as cases_csv:
-        reader = csv.DictReader(cases_csv)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["confirmed_cases"] = int(row["Positive Total"])
-                if row["Estimated active cases"]:
-                    data[row["Date"]]["est_active_cases"] = int(
-                        row["Estimated active cases"]
-                    )
-                    break
-    with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as deaths_csv:
-        reader = csv.DictReader(deaths_csv)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["confirmed_deaths"] = int(row["DeathsConfTotal"])
+
+    case_data = get_excel_data(xlsx_path, "Cases (Report Date)")
+    for row in case_data.values():
+        data[row["Date"]] = {}
+        data[row["Date"]]["confirmed_cases"] = int(row["Positive Total"])
+        if row["Estimated active cases"]:
+            data[row["Date"]]["est_active_cases"] = int(row["Estimated active cases"])
+
+    deaths_data = get_excel_data(xlsx_path, "DeathsReported (Report Date)")
+    for row in deaths_data.values():
+        data[row["Date"]]["confirmed_deaths"] = int(row["DeathsConfTotal"])
+
     result = {d.strftime(DAY_FMT): None for d in date_range}
     for date_str, day in data.items():
-        if day["est_active_cases"]:
+        if "est_active_cases" in day and day["est_active_cases"]:
             result[date_str] = (
                 day["confirmed_cases"]
                 - day["est_active_cases"]
@@ -224,14 +217,17 @@ def run():
     args = parse_args()
     date_range = get_date_range(args["today"], args["fromdate"])
     last_thursday = get_last_thursday(args["today"])
+    url_date = args["today"].strftime(URL_DATE_FMT).lower()
+    xlsx_path = os.path.join(TMP_DIR, url_date + ".xlsx")
+
     set_up_folders(args)
-    fetch_data(args)
+    fetch_data(args, xlsx_path)
     manual_data = (
         None if args["nomanual"] else get_manual_data(args["today"], last_thursday)
     )
-    recoveries = get_recoveries(date_range)
+    recoveries = get_recoveries(date_range, xlsx_path)
     create_infobox_and_barchart(
-        date_range, last_thursday, args, manual_data, recoveries
+        xlsx_path, date_range, last_thursday, args, manual_data, recoveries
     )
     create_cases_by_category_table(date_range, last_thursday, manual_data, recoveries)
     create_cases_by_county_table(date_range)

@@ -23,11 +23,37 @@ from openpyxl import load_workbook
 from constants import *
 
 
+def get_excel_data(filename, sheetname=None):
+    """Gets all rows, represented as a dict. This makes some assumptions about the
+    format of the Excel sheet, including that the first row is the header row and that
+    the first column contains the dates."""
+    wb = load_workbook(filename=filename, data_only=True)
+
+    # If sheet name isn't passed in, assume we're looking at the first sheet
+    if not sheetname:
+        sheets = wb.sheetnames
+        sheetname = sheets[0]
+    sheet = wb[sheetname]
+
+    headings = []
+    result = {}
+    for ind, row in enumerate(sheet.rows):
+        if ind == 0:
+            headings = [x.value for x in row]
+        else:
+            dt = row[0].value
+            if dt:
+                result[dt.date()] = {
+                    x: row[h_ind].value for h_ind, x in enumerate(headings)
+                }
+    return result
+
+
 def get_excel_data_for_date_range(filename, date_range, sheetname=None):
     """Gets the rows for the selected date range, represented as a dict. This makes some
     assumptions about the format of the Excel sheet, including that the first row is
     the header row and that the first column contains the dates."""
-    wb = load_workbook(filename=os.path.join(TMP_DIR, filename), data_only=True)
+    wb = load_workbook(filename=filename, data_only=True)
 
     # If sheet name isn't passed in, assume we're looking at the first sheet
     if not sheetname:

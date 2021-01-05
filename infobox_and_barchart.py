@@ -26,9 +26,10 @@ from excel import get_excel_data_for_date_range
 from utils import comma_separate
 
 
-def get_data(date_range, today):
+def get_data(xlsx_path, date_range, today):
     prev_day = date_range[0] - timedelta(days=1)
     today_str = today.strftime(DAY_FMT)
+    full_date_range = [prev_day] + date_range
     data = {
         d.strftime(DAY_FMT): {
             "confirmed_cases": None,
@@ -36,73 +37,76 @@ def get_data(date_range, today):
             "total_cases": None,
             "deaths": None,
         }
-        for d in [prev_day] + date_range
+        for d in full_date_range
     }
 
-    with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as cases_csv:
-        reader = csv.DictReader(cases_csv)
-        for row in reader:
-            if row["Date"] in data:
-                confirmed = int(row["Positive Total"])
-                probable = int(row["Probable Total"])
-                data[row["Date"]]["confirmed_cases"] = confirmed
-                data[row["Date"]]["probable_cases"] = probable
-                data[row["Date"]]["total_cases"] = confirmed + probable
-    with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as deaths_csv:
-        reader = csv.DictReader(deaths_csv)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["deaths"] = int(row["DeathsConfTotal"]) + int(
-                    row["DeathsProbTotal"]
-                )
+    case_data = get_excel_data_for_date_range(
+        xlsx_path, full_date_range, "Cases (Report Date)"
+    )
+    for row in case_data.values():
+        date_str = row["Date"].strftime(DAY_FMT)
+        confirmed = int(row["Positive Total"])
+        probable = int(row["Probable Total"])
+        data[date_str] = {}
+        data[date_str]["confirmed_cases"] = confirmed
+        data[date_str]["probable_cases"] = probable
+        data[date_str]["total_cases"] = confirmed + probable
+
+    deaths_data = get_excel_data_for_date_range(
+        xlsx_path, full_date_range, "DeathsReported (Report Date)"
+    )
+    for row in deaths_data.values():
+        date_str = row["Date"].strftime(DAY_FMT)
+        data[date_str]["deaths"] = int(row["DeathsConfTotal"]) + int(
+            row["DeathsProbTotal"]
+        )
 
     # Additional data for today only, for use in the article body
-    with open(os.path.join(TMP_DIR, "Testing2.csv"), "r") as tests_csv:
-        reader = csv.DictReader(tests_csv)
-        for row in reader:
-            if row["Date"] == today_str:
-                data[today_str]["total_molecular_tests"] = int(
-                    row["Molecular All Tests Total"]
-                )
-                data[today_str]["individual_molecular_tests"] = int(
-                    row["Molecular Total"]
-                )
-                data[today_str]["antigen_tests"] = int(row["Antigen Total"])
-    with open(os.path.join(TMP_DIR, "LTC Facilities.csv"), "r") as ltc_csv:
-        reader = csv.DictReader(ltc_csv)
-        for row in reader:
-            if row["date"] == today_str:
-                data[today_str]["ltc_deaths"] = int(row["Deaths Reported in LTCFs"])
-                data[today_str]["ltc_cases"] = int(
-                    row["Cases in Residents/Healthcare Workers of LTCFs"]
-                )
-                data[today_str]["ltc_facilities"] = int(row["facilities"])
+    testing_data = get_excel_data_for_date_range(
+        xlsx_path, [today], "Testing2 (Report Date)"
+    )
+    data[today_str]["total_molecular_tests"] = int(
+        testing_data[today]["Molecular All Tests Total"]
+    )
+    data[today_str]["individual_molecular_tests"] = int(
+        testing_data[today]["Molecular Total"]
+    )
+    data[today_str]["antigen_tests"] = int(testing_data[today]["Antigen Total"])
+
+    ltc_data = get_excel_data_for_date_range(xlsx_path, [today], "LTC Facilities")
+    data[today_str]["ltc_deaths"] = int(ltc_data[today]["Deaths Reported in LTCFs"])
+    data[today_str]["ltc_cases"] = int(
+        ltc_data[today]["Cases in Residents/Healthcare Workers of LTCFs"]
+    )
+    data[today_str]["ltc_facilities"] = int(ltc_data[today]["facilities"])
 
     # For hospitalizations and rolling averages, the data from previous days is the most
     # recent
     yesterday = today - timedelta(days=1)
     day_before_yesterday = today - timedelta(days=2)
 
-    case_data = get_excel_data_for_date_range("CasesByDate.xlsx", [yesterday])
+    case_data = get_excel_data_for_date_range(
+        xlsx_path, [yesterday], "CasesByDate (Test Date)"
+    )
     data[today_str]["rolling_avg_cases"] = int(
         round(case_data[yesterday]["7-day confirmed case average"])
     )
 
     death_data = get_excel_data_for_date_range(
-        "DateofDeath.xlsx", [day_before_yesterday]
+        xlsx_path, [day_before_yesterday], "DateofDeath"
     )
     data[today_str]["rolling_avg_deaths"] = int(
         round(death_data[day_before_yesterday]["7-day confirmed death average"])
     )
 
     hosp_data = get_excel_data_for_date_range(
-        "Hospitalization from Hospitals.xlsx", [yesterday]
+        xlsx_path, [yesterday], "Hospitalization from Hospitals"
     )
     data[today_str]["hosp_current"] = hosp_data[yesterday][
-        "Total number of confirmed COVID patients in hospital today"
+        "Total number of COVID patients in hospital today"
     ]
-    data[today_str]["icu_current"] = hosp_data[yesterday]["Confirmed ICU"]
-    data[today_str]["vent_current"] = hosp_data[yesterday]["Confirmed intubated"]
+    data[today_str]["icu_current"] = hosp_data[yesterday]["ICU"]
+    data[today_str]["vent_current"] = hosp_data[yesterday]["Intubated"]
 
     return data
 
@@ -196,7 +200,6 @@ def get_addl_info(data, today, last_thursday):
     today_str = today.strftime(DAY_FMT)
     today_url_fmt = today.strftime(URL_DATE_FMT).lower()
     today_citation_fmt = today.strftime(CITATION_DATE_FORMAT)
-    thursday_url_fmt = last_thursday.strftime(URL_DATE_FMT).lower()
     thursday_citation_fmt = last_thursday.strftime(CITATION_DATE_FORMAT)
     addl = "Latest rolling averages (prev day for cases, 2 days ago for deaths):"
     addl += "\n\tConfirmed cases: {:,}".format(data[today_str]["rolling_avg_cases"])
@@ -241,9 +244,9 @@ def write_file(infobox, bar_chart, addl_info_for_article_body):
 
 
 def create_infobox_and_barchart(
-    date_range, last_thursday, args, manual_data, recoveries
+    xlsx_path, date_range, last_thursday, args, manual_data, recoveries
 ):
-    data = get_data(date_range, args["today"])
+    data = get_data(xlsx_path, date_range, args["today"])
     infobox = create_infobox(
         data, args["today"], last_thursday, manual_data, recoveries
     )
