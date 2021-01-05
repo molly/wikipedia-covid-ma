@@ -49,12 +49,14 @@ def safe_sum(v1, v2):
     return 0
 
 
-def create_cases_charts(date_list):
+def create_cases_charts(xlsx_path, date_list):
     cases_date_list = date_list[:-1]
     date_str_list = [d.strftime(DAY_FMT) for d in cases_date_list]
     data = {d: {} for d in date_str_list}
 
-    case_data = get_excel_data_for_date_range("CasesByDate.xlsx", date_list)
+    case_data = get_excel_data_for_date_range(
+        xlsx_path, date_list, "CasesByDate (Test Date)"
+    )
     for d in date_list:
         data[d.strftime(DAY_FMT)] = {
             "total": safe_lookup(
@@ -75,13 +77,13 @@ def create_cases_charts(date_list):
         outfile.write(out_str)
 
 
-def create_deaths_charts(date_list):
+def create_deaths_charts(xlsx_path, date_list):
     # There is a two day lag in death data
     deaths_date_list = date_list[:-2]
     date_str_list = [d.strftime(DAY_FMT) for d in deaths_date_list]
     data = {d: {} for d in date_str_list}
 
-    death_data = get_excel_data_for_date_range("DateofDeath.xlsx", date_list)
+    death_data = get_excel_data_for_date_range(xlsx_path, date_list, "DateofDeath")
     for d in date_list:
         if d in death_data:
             data[d.strftime(DAY_FMT)] = {
@@ -108,7 +110,7 @@ def create_deaths_charts(date_list):
         outfile.write(out_str)
 
 
-def create_statistics_graphs(args):
+def create_statistics_graphs(xlsx_path, args):
     date_list = create_date_list(args["today"])
-    create_cases_charts(date_list)
-    create_deaths_charts(date_list)
+    create_cases_charts(xlsx_path, date_list)
+    create_deaths_charts(xlsx_path, date_list)

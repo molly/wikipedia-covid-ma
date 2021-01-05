@@ -25,51 +25,56 @@ from constants import *
 from excel import get_excel_data_for_date_range, safe_lookup
 
 
-def get_data(date_range):
+def get_data(xlsx_path, date_range):
     # Also grab data for the day before, so we can calculate % change
     prev_day = date_range[0] - timedelta(days=1)
     date_range_with_prev_day = [prev_day] + date_range
     data = {d.strftime(DAY_FMT): {} for d in date_range_with_prev_day}
-    with open(os.path.join(TMP_DIR, "Cases.csv"), "r") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                pos_total = int(row["Positive Total"])
-                pos_new = int(row["Positive New"])
-                prob_total = int(row["Probable Total"])
-                prob_new = int(row["Probable New"])
-                data[row["Date"]] = {
-                    "total_cases": pos_total,
-                    "total_cases_new": pos_new,
-                    "probable_cases": prob_total,
-                    "probable_cases_new": prob_new,
-                }
-    with open(os.path.join(TMP_DIR, "Testing2.csv"), "r") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["testing_total"] = int(row["Molecular Total"])
-                data[row["Date"]]["testing_new"] = int(row["Molecular New"])
+
+    case_data = get_excel_data_for_date_range(
+        xlsx_path, date_range_with_prev_day, "Cases (Report Date)"
+    )
+    for row in case_data.values():
+        date_str = row["Date"].strftime(DAY_FMT)
+        pos_total = int(row["Positive Total"])
+        pos_new = int(row["Positive New"])
+        prob_total = int(row["Probable Total"])
+        prob_new = int(row["Probable New"])
+        data[date_str] = {
+            "total_cases": pos_total,
+            "total_cases_new": pos_new,
+            "probable_cases": prob_total,
+            "probable_cases_new": prob_new,
+        }
+
+    testing_data = get_excel_data_for_date_range(
+        xlsx_path, date_range_with_prev_day, "Testing2 (Report Date)"
+    )
+    for row in testing_data.values():
+        date_str = row["Date"].strftime(DAY_FMT)
+        data[date_str]["testing_total"] = int(row["Molecular Total"])
+        data[date_str]["testing_new"] = int(row["Molecular New"])
+
     hosp_data = get_excel_data_for_date_range(
-        "Hospitalization from Hospitals.xlsx", date_range_with_prev_day
+        xlsx_path, date_range_with_prev_day, "Hospitalization from Hospitals"
     )
     for d in date_range_with_prev_day:
         if d in hosp_data:
             data[d.strftime(DAY_FMT)]["hospitalized"] = safe_lookup(
-                hosp_data[d],
-                "Total number of confirmed COVID patients in hospital today",
-                -1,
+                hosp_data[d], "Total number of COVID patients in hospital today", -1,
             )
-    with open(os.path.join(TMP_DIR, "DeathsReported.csv"), "r") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                data[row["Date"]]["deaths_total"] = int(row["DeathsConfTotal"]) + int(
-                    row["DeathsProbTotal"]
-                )
-                data[row["Date"]]["deaths_new"] = int(row["DeathsConfNew"]) + int(
-                    row["DeathsProbNew"]
-                )
+
+    deaths_reported_data = get_excel_data_for_date_range(
+        xlsx_path, date_range_with_prev_day, "DeathsReported (Report Date)"
+    )
+    for row in deaths_reported_data.values():
+        date_str = row["Date"].strftime(DAY_FMT)
+        data[date_str]["deaths_total"] = int(row["DeathsConfTotal"]) + int(
+            row["DeathsProbTotal"]
+        )
+        data[date_str]["deaths_new"] = int(row["DeathsConfNew"]) + int(
+            row["DeathsProbNew"]
+        )
     return data
 
 
@@ -158,7 +163,9 @@ def create_table(date_range, data, last_thursday, manual_data, recoveries):
         f.write("".join(rows))
 
 
-def create_cases_by_category_table(date_range, last_thursday, manual_data, recoveries):
-    data = get_data(date_range)
+def create_cases_by_category_table(
+    xlsx_path, date_range, last_thursday, manual_data, recoveries
+):
+    data = get_data(xlsx_path, date_range)
     calculate_columns(date_range, data)
     create_table(date_range, data, last_thursday, manual_data, recoveries)

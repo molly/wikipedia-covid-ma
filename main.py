@@ -19,11 +19,10 @@
 # SOFTWARE.
 
 import argparse
-import csv
 import os
 import requests
 from datetime import date, timedelta
-from excel import get_excel_data, get_excel_data_for_date_range
+from excel import get_excel_data_for_date_range
 
 from constants import *
 from infobox_and_barchart import create_infobox_and_barchart
@@ -146,16 +145,21 @@ def get_recoveries(date_range, xlsx_path):
         for d in date_range
     }
 
-    case_data = get_excel_data(xlsx_path, "Cases (Report Date)")
+    case_data = get_excel_data_for_date_range(
+        xlsx_path, date_range, "Cases (Report Date)"
+    )
     for row in case_data.values():
-        data[row["Date"]] = {}
-        data[row["Date"]]["confirmed_cases"] = int(row["Positive Total"])
+        date_str = row["Date"].strftime(DAY_FMT)
+        data[date_str]["confirmed_cases"] = int(row["Positive Total"])
         if row["Estimated active cases"]:
-            data[row["Date"]]["est_active_cases"] = int(row["Estimated active cases"])
+            data[date_str]["est_active_cases"] = int(row["Estimated active cases"])
 
-    deaths_data = get_excel_data(xlsx_path, "DeathsReported (Report Date)")
+    deaths_data = get_excel_data_for_date_range(
+        xlsx_path, date_range, "DeathsReported (Report Date)"
+    )
     for row in deaths_data.values():
-        data[row["Date"]]["confirmed_deaths"] = int(row["DeathsConfTotal"])
+        date_str = row["Date"].strftime(DAY_FMT)
+        data[date_str]["confirmed_deaths"] = int(row["DeathsConfTotal"])
 
     result = {d.strftime(DAY_FMT): None for d in date_range}
     for date_str, day in data.items():
@@ -229,12 +233,14 @@ def run():
     create_infobox_and_barchart(
         xlsx_path, date_range, last_thursday, args, manual_data, recoveries
     )
-    create_cases_by_category_table(date_range, last_thursday, manual_data, recoveries)
-    create_cases_by_county_table(date_range)
-    create_daily_county_table(
-        args["today"], recoveries[args["today"].strftime(DAY_FMT)]
+    create_cases_by_category_table(
+        xlsx_path, date_range, last_thursday, manual_data, recoveries
     )
-    create_statistics_graphs(args)
+    create_cases_by_county_table(xlsx_path, date_range)
+    create_daily_county_table(
+        xlsx_path, args["today"], recoveries[args["today"].strftime(DAY_FMT)]
+    )
+    create_statistics_graphs(xlsx_path, args)
 
 
 if __name__ == "__main__":

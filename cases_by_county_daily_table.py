@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import csv
 import os
 from constants import *
+from openpyxl import load_workbook
 from utils import comma_separate
 
 TOTAL_POPULATION = 6892503
@@ -109,29 +109,28 @@ COUNTIES = [
 ]
 
 
-def get_data(today):
+def get_data(xlsx_path, today):
     today_str = today.strftime(DAY_FMT)
     data = {
         c["county"]: {"population": c["population"], "cases": 0, "deaths": 0}
         for c in COUNTIES
     }
-    with open(
-        os.path.join(TMP_DIR, "County.csv"), "r", encoding="utf-8-sig"
-    ) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] == today_str:
-                if row["County"] in ["Dukes", "Nantucket", "Dukes and Nantucket"]:
-                    county = "Dukes and Nantucket"
-                else:
-                    county = row["County"]
-                if row["Total Confirmed Cases"]:
-                    data[county]["cases"] += int(row["Total Confirmed Cases"])
-                if row["Total Probable and Confirmed Deaths"]:
-                    data[county]["deaths"] += int(
-                        row["Total Probable and Confirmed Deaths"]
-                    )
-        return data
+
+    wb = load_workbook(filename=xlsx_path, data_only=True)
+    sheet = wb["County_Daily"]
+    for ind, row in enumerate(sheet.rows):
+        if ind == 0:
+            continue
+        dt = row[0].value
+        if dt and dt.date() == today:
+            county = row[1].value
+            if county in ["Dukes", "Nantucket", "Dukes and Nantucket"]:
+                county = "Dukes and Nantucket"
+            if row[3].value:
+                data[county]["cases"] += int(row[3].value)
+            if row[5].value:
+                data[county]["deaths"] += int(row[5].value)
+    return data
 
 
 def create_header_row(data, recov):
@@ -206,6 +205,6 @@ def create_table(data, today, recov):
         f.write("".join(rows))
 
 
-def create_daily_county_table(today, recov):
-    data = get_data(today)
+def create_daily_county_table(xlsx_path, today, recov):
+    data = get_data(xlsx_path, today)
     create_table(data, today, recov)

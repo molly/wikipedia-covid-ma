@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import csv
 import os
 from constants import *
+from openpyxl import load_workbook
 
 COUNTIES = [
     "Barnstable",
@@ -40,31 +40,25 @@ COUNTIES = [
 ]
 
 
-def get_data(date_range):
+def get_data(xlsx_path, date_range):
     data = {date.strftime(DAY_FMT): {} for date in date_range}
-    with open(
-        os.path.join(TMP_DIR, "County.csv"), "r", encoding="utf-8-sig"
-    ) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["Date"] in data:
-                if row["County"] in ["Dukes", "Nantucket", "Dukes and Nantucket"]:
-                    # Roll up Dukes & Nantucket data
-                    county = "Dukes and Nantucket"
-                else:
-                    county = row["County"]
-
-                if county not in data[row["Date"]]:
-                    data[row["Date"]][county] = {"count": 0, "deaths": 0}
-
-                if row["Total Confirmed Cases"]:
-                    data[row["Date"]][county]["count"] += int(
-                        row["Total Confirmed Cases"]
-                    )
-                if row["Total Probable and Confirmed Deaths"]:
-                    data[row["Date"]][county]["deaths"] += int(
-                        row["Total Probable and Confirmed Deaths"]
-                    )
+    wb = load_workbook(filename=xlsx_path, data_only=True)
+    sheet = wb["County_Daily"]
+    for ind, row in enumerate(sheet.rows):
+        if ind == 0:
+            continue
+        dt = row[0].value
+        date_str = dt.strftime(DAY_FMT)
+        if dt and dt.date() in date_range:
+            county = row[1].value
+            if county in ["Dukes", "Nantucket", "Dukes and Nantucket"]:
+                county = "Dukes and Nantucket"
+            if county not in data[date_str]:
+                data[date_str][county] = {"count": 0, "deaths": 0}
+            if row[3].value:
+                data[date_str][county]["count"] += int(row[3].value)
+            if row[5].value:
+                data[date_str][county]["deaths"] += int(row[5].value)
     return data
 
 
@@ -88,6 +82,6 @@ def create_table(date_range, data):
         f.write("".join(rows))
 
 
-def create_cases_by_county_table(date_range):
-    data = get_data(date_range)
+def create_cases_by_county_table(xlsx_path, date_range):
+    data = get_data(xlsx_path, date_range)
     create_table(date_range, data)
