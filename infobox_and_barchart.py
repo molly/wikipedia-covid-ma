@@ -133,24 +133,18 @@ def create_infobox(data, today, last_thursday, manual_data, recoveries):
         )
     )
     lines.append(
-        "| hospitalized_cases = {:,} (current) {}<br>{} (cumulative) {}"
-        '<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["hosp_current"],
-            asof,
-            comma_separate(manual_data["total_hosp"]) if manual_data else "CUMULATIVE",
-            as_of_last_thursday,
+        '| hospitalized_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
+            data[today_str]["hosp_current"], asof,
         )
     )
     lines.append(
         '| critical_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["icu_current"],
-            asof,
+            data[today_str]["icu_current"], asof,
         )
     )
     lines.append(
         '| ventilator_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["vent_current"],
-            asof,
+            data[today_str]["vent_current"], asof,
         )
     )
     lines.append(

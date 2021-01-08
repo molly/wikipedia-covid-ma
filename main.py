@@ -121,11 +121,9 @@ def get_manual_data(last_thursday):
         "Total individuals who have completed monitoring (no longer in quarantine): "
     )
     quar_total = input("Total individuals subject to quarantine: ")
-    total_hosp = input("Cumulative hospitalizations: ")
     return {
         "quar_total": int(quar_total),
         "quar_released": int(quar_released),
-        "total_hosp": int(total_hosp),
     }
 
 
