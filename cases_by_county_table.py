@@ -48,7 +48,10 @@ def get_data(xlsx_path, date_range):
         if ind == 0:
             continue
         dt = row[0].value
-        date_str = dt.strftime(DAY_FMT)
+        try:
+            date_str = dt.strftime(DAY_FMT)
+        except AttributeError:
+            continue
         if dt and dt.date() in date_range:
             county = row[1].value
             if county in ["Dukes", "Nantucket", "Dukes and Nantucket"]:

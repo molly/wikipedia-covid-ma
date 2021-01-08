@@ -210,14 +210,6 @@ def get_addl_info(data, url, today, last_thursday):
         "Public Health|url-status=live|access-date={cite_date}|format=XLSX}}}}"
         "</ref>".format(url=url, cite_date=today_citation_fmt)
     )
-    addl += (
-        '\n\n<ref name="MDPH-current-week">{{{{Cite web|url=https://www.mass.gov/doc/'
-        "weekly-covid-19-public-health-report-{url_date}/download|title=Weekly COVID-19"
-        " Public Health Report|date={cite_date}|website=Massachusetts Department of"
-        " Public Health|url-status=live|access-date={cite_date}}}}}</ref>".format(
-            url_date=today_url_fmt, cite_date=thursday_citation_fmt
-        )
-    )
     addl += "\n\nLong-term care:\n\tDeaths: {:,}".format(data[today_str]["ltc_deaths"])
     addl += "\n\tCases among residents & workers: {:,}".format(
         data[today_str]["ltc_cases"]
