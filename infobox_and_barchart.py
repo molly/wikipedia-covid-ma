@@ -102,10 +102,10 @@ def get_data(xlsx_path, date_range, today):
         xlsx_path, [yesterday], "Hospitalization from Hospitals"
     )
     data[today_str]["hosp_current"] = hosp_data[yesterday][
-        "Total number of COVID patients in hospital today"
+        "Total number of confirmed COVID patients in hospital today"
     ]
-    data[today_str]["icu_current"] = hosp_data[yesterday]["ICU"]
-    data[today_str]["vent_current"] = hosp_data[yesterday]["Intubated"]
+    data[today_str]["icu_current"] = hosp_data[yesterday]["Confirmed ICU"]
+    data[today_str]["vent_current"] = hosp_data[yesterday]["Confirmed intubated"]
 
     return data
 
@@ -134,17 +134,20 @@ def create_infobox(data, today, last_thursday, manual_data, recoveries):
     )
     lines.append(
         '| hospitalized_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["hosp_current"], asof,
+            data[today_str]["hosp_current"],
+            asof,
         )
     )
     lines.append(
         '| critical_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["icu_current"], asof,
+            data[today_str]["icu_current"],
+            asof,
         )
     )
     lines.append(
         '| ventilator_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
-            data[today_str]["vent_current"], asof,
+            data[today_str]["vent_current"],
+            asof,
         )
     )
     lines.append(
