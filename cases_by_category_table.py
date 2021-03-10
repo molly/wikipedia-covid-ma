@@ -61,7 +61,7 @@ def get_data(xlsx_path, date_range):
         if d in hosp_data:
             data[d.strftime(DAY_FMT)]["hospitalized"] = safe_lookup(
                 hosp_data[d],
-                "Total number of COVID patients in hospital today",
+                "Total number of confirmed COVID patients in hospital today",
                 -1,
             )
 
