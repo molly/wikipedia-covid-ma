@@ -92,7 +92,6 @@ def fetch_data(args, url, xlsx_path):
         # If we're in dev mode and the files exist, we don't have to fetch them again.
         return
 
-    print(xlsx_path)
     r = requests.get(url, headers=REQUEST_HEADER)
     if r.status_code == 200:
         with open(xlsx_path, "wb+") as f:
