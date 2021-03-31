@@ -5,7 +5,6 @@ OUT_DIR = "out"
 URL = "https://www.mass.gov/doc/covid-19-raw-data-{}/download"
 EXCEL_URL = "https://www.mass.gov/doc/chapter-93-state-numbers-daily-report-{}/download"
 CITATION_URL = "https://www.mass.gov/doc/covid-19-dashboard-{}/download"
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search?city={}&state=massachusetts&format=json&addressdetails=1"
 
 URL_DATE_FMT = "%B-%-d-%Y"
 DAY_FMT = "%-m/%-d/%Y"
