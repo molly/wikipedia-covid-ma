@@ -60,9 +60,7 @@ def get_data(xlsx_path, date_range):
     for d in date_range_with_prev_day:
         if d in hosp_data:
             data[d.strftime(DAY_FMT)]["hospitalized"] = safe_lookup(
-                hosp_data[d],
-                "Total number of confirmed COVID patients in hospital today",
-                -1,
+                hosp_data[d], "Total number of COVID patients in hospital today", -1,
             )
 
     deaths_reported_data = get_excel_data_for_date_range(
