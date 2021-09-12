@@ -18,11 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import re
 import os
-from datetime import timedelta
+from datetime import date, timedelta
 from constants import *
 from excel import get_excel_data_for_date_range
-from utils import comma_separate
 
 
 def get_data(xlsx_path, date_range, today):
@@ -113,46 +113,72 @@ def get_data(xlsx_path, date_range, today):
     return data
 
 
-def create_infobox(data, today):
+def create_infobox(data, today, manual_data):
     lines = []
     today_str = today.strftime(DAY_FMT)
     today_citation = today.strftime(CITATION_DATE_FORMAT)
     asof = "{{{{as of|{}|alt=as of {}}}}}".format(
         today.strftime("%Y|%m|%d"), today.strftime(AS_OF_ALT_FMT)
     )
+    asof_vaccine = "{{{{as of|{}|alt=as of {}}}}}".format(
+        manual_data["as_of"].strftime("%Y|%m|%d"),
+        manual_data["as_of"].strftime(AS_OF_ALT_FMT),
+    )
+    vaccine_citation = (
+        '<ref name="CDC-vaccines">{{{{cite web | title = COVID-19 State Profile Report '
+        "- Massachusetts | url = https://healthdata.gov/Community/COVID-19-State-Profile-"
+        "Report-Massachusetts/j75q-tgps | website = Healthdata.gov | publisher = [[U.S. Department"
+        " of Health & Human Services]] | date = {} | access-date = {} }}}}</ref>".format(
+            manual_data["as_of"].strftime(CITATION_DATE_FORMAT), today_citation
+        )
+    )
 
     lines.append(
-        '| confirmed_cases = {:,} current<br/>({:,} total cases) {}<ref name="MDPH-Cases">{{{{cite web |'
+        '| confirmed_cases   = {:,} (cumulative) {}<ref name="MDPH-Cases">{{{{cite web |'
         " title = COVID-19 Response Reporting | url = https://www.mass.gov/info-details"
         "/covid-19-response-reporting | website = Massachusetts Department of Public "
         "Health | access-date = {}}}}}</ref>".format(
             data[today_str]["confirmed_cases"],
-            data[today_str]["total_cases"],
             asof,
             today_citation,
         )
     )
     lines.append(
-        '| hospitalized_cases = {:,} {}<ref name="MDPH-Cases"/>'.format(
+        '| hospitalized_cases = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
             data[today_str]["hosp_current"],
             asof,
         )
     )
     lines.append(
-        '| critical_cases  = {:,} {}<ref name="MDPH-Cases"/>'.format(
+        '| critical_cases    = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
             data[today_str]["icu_current"],
             asof,
         )
     )
     lines.append(
-        '| ventilator_cases = {:,} {}<ref name="MDPH-Cases"/>'.format(
+        '| ventilator_cases  = {:,} (current) {}<ref name="MDPH-Cases"/>'.format(
             data[today_str]["vent_current"],
             asof,
         )
     )
     lines.append(
-        '| deaths          = {:,} {}<ref name="MDPH-Cases"/>'.format(
+        '| deaths            = {:,} (cumulative) {}<ref name="MDPH-Cases"/>'.format(
             data[today_str]["deaths"], asof
+        )
+    )
+    lines.append(
+        (
+            "| vaccinations      = {{{{Unbulleted list\n| {:,} ({}) (people with at "
+            "least one dose) {}{}\n| {:,} ({}) (fully vaccinated people) {}{}\n}}}}"
+        ).format(
+            manual_data["one_dose_num"],
+            manual_data["one_dose_perc"],
+            asof_vaccine,
+            vaccine_citation,
+            manual_data["fully_vaccinated_num"],
+            manual_data["fully_vaccinated_perc"],
+            asof_vaccine,
+            '<ref name="CDC-vaccines" />',
         )
     )
     return "\n".join(lines)
@@ -205,10 +231,11 @@ def create_bar_chart(data, date_range):
     return "\n".join(rows)
 
 
-def get_addl_info(data, url, today):
+def get_addl_info(data, url, today, manual_data):
     today_str = today.strftime(DAY_FMT)
     today_citation_fmt = today.strftime(CITATION_DATE_FORMAT)
-    addl = "Latest rolling averages (prev day for cases, 2 days ago for deaths):"
+    addl = "Total cases: {:,}".format(data[today_str]["total_cases"])
+    addl += "\nLatest rolling averages (prev day for cases, 2 days ago for deaths):"
     addl += "\n\tConfirmed cases: {:,}".format(data[today_str]["rolling_avg_cases"])
     addl += "\n\tConfirmed deaths: {:,}".format(data[today_str]["rolling_avg_deaths"])
     addl += "\n\nTests:\n\tMolecular: {:,} tests on {:,} individuals".format(
@@ -222,6 +249,13 @@ def get_addl_info(data, url, today):
         "Public Health|url-status=live|access-date={cite_date}|format=XLSX}}}}"
         "</ref>".format(url=url, cite_date=today_citation_fmt)
     )
+    addl += "\n\nVaccines ({}):".format(manual_data["as_of"].strftime(DAY_FMT))
+    addl += "\n\t>1 dose: {:,}, {}".format(
+        manual_data["one_dose_num"], manual_data["one_dose_perc"]
+    )
+    addl += "\n\t>Fully vaccinated: {:,}, {}".format(
+        manual_data["fully_vaccinated_num"], manual_data["fully_vaccinated_perc"]
+    )
 
     return addl
 
@@ -231,9 +265,39 @@ def write_file(infobox, bar_chart, addl_info_for_article_body):
         f.write(infobox + "\n\n\n" + bar_chart + "\n\n\n" + addl_info_for_article_body)
 
 
+def parse_vax_row(prompt):
+    inp = input(prompt)
+    result = re.search(r"([\d,]+).*?([\d\.%]+)", inp)
+    if result:
+        num = result.group(1)
+        perc = result.group(2)
+        if num:
+            num = int(re.sub(",", "", num))
+        return num, perc
+    return None
+
+
+def get_manual_data():
+    """Some data isn't included in the spreadsheets but can be pulled from other reports."""
+    print(
+        "From CDC: https://healthdata.gov/Community/COVID-19-State-Profile-Report-Massachusetts/j75q-tgps"
+    )
+    one_dose_num, one_dose_perc = parse_vax_row("Received >1 dose: ")
+    fully_vaccinated_num, fully_vaccinated_perc = parse_vax_row("Fully vaccinated: ")
+    as_of = input("As of (YYYY-MM-DD): ")
+    return {
+        "one_dose_num": one_dose_num,
+        "one_dose_perc": one_dose_perc,
+        "fully_vaccinated_num": fully_vaccinated_num,
+        "fully_vaccinated_perc": fully_vaccinated_perc,
+        "as_of": date.fromisoformat(as_of),
+    }
+
+
 def create_infobox_and_barchart(xlsx_path, url, today, date_range, args):
     data = get_data(xlsx_path, date_range, today)
-    infobox = create_infobox(data, today)
+    manual_data = get_manual_data()
+    infobox = create_infobox(data, today, manual_data)
     bar_chart = create_bar_chart(data, date_range)
-    addl_info_for_article_body = get_addl_info(data, url, today)
+    addl_info_for_article_body = get_addl_info(data, url, today, manual_data)
     write_file(infobox, bar_chart, addl_info_for_article_body)

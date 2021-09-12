@@ -168,7 +168,7 @@ def create_county_row(county, data):
         row += "| " + CASES_PER_POP_FORMULA.format(data["cases"], divided_pop) + "\n"
         row += "| " + DEATHS_PER_POP_FORMULA.format(data["deaths"], divided_pop) + "\n"
     else:
-        for i in range(4):
+        for i in range(3):
             row += "| " + ROW_STYLE + "| n/a\n"
     row += "| " + DEATHS_CASES_FORMULA.format(data["deaths"], data["cases"] / 100)
     row += "\n"
@@ -178,7 +178,7 @@ def create_county_row(county, data):
 def create_footer(today):
     pretty_today = today.strftime(CITATION_DATE_FORMAT)
     row = '|- style="text-align:center;" class="sortbottom"\n'
-    row += '| colspan="8" | {{{{resize|Updated {}}}}}<br/>'.format(pretty_today)
+    row += '| colspan="7" | {{{{resize|Updated {}}}}}<br/>'.format(pretty_today)
     row += "{{resize|Data is publicly reported by Massachusetts Department of Public "
     row += "Health}}<ref>{{cite web |title=COVID-19 Updates and Information |"
     row += "url=https://www.mass.gov/info-details/covid-19-updates-and-information "
