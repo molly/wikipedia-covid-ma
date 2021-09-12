@@ -214,9 +214,7 @@ def create_bar_chart(data, date_range):
         else:
             perc_case_change_str = "n/a"
 
-        if data[date_str]["confirmed_cases"] is None:
-            row = ";;;;;;;"
-        else:
+        if data[date_str]["confirmed_cases"] is not None:
             sign = "" if perc_case_change_str == "n/a" or perc_case_change < 0 else "+"
             row = "{date};{deaths};;{conf};{prob};;{total:,};{sign}{change}".format(
                 date=date.strftime(BAR_CHART_FMT),
@@ -227,7 +225,7 @@ def create_bar_chart(data, date_range):
                 sign=sign,
                 change=perc_case_change_str,
             )
-        rows.append(row)
+            rows.append(row)
     return "\n".join(rows)
 
 
