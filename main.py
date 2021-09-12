@@ -22,12 +22,10 @@ import argparse
 import os
 import requests
 from datetime import date, timedelta
-from excel import get_excel_data_for_date_range
 
 from constants import *
+
 from infobox_and_barchart import create_infobox_and_barchart
-from cases_by_category_table import create_cases_by_category_table
-from cases_by_county_table import create_cases_by_county_table
 from cases_by_county_daily_table import create_daily_county_table
 from statistics import create_statistics_graphs
 
@@ -86,9 +84,9 @@ def parse_args():
     }
 
 
-def fetch_data(args, url, xlsx_path):
+def fetch_data(url, xlsx_path, is_dev):
     """Fetch the data for today and extract the necessary files."""
-    if args["dev"] and len(os.listdir(TMP_DIR)) > 0:
+    if is_dev and len(os.listdir(TMP_DIR)) > 0:
         # If we're in dev mode and the files exist, we don't have to fetch them again.
         return
 
@@ -111,65 +109,12 @@ def fetch_data(args, url, xlsx_path):
         )
 
 
-def get_manual_data(last_thursday):
-    """Some data isn't included in the CSVs but can be pulled from other reports."""
-    print(
-        "From the weekly report: https://www.mass.gov/doc/weekly-covid-19-public-health"
-        "-report-{}/download".format(last_thursday.strftime(URL_DATE_FMT).lower())
-    )
-    quar_released = input(
-        "Total individuals who have completed monitoring (no longer in quarantine): "
-    )
-    quar_total = input("Total individuals subject to quarantine: ")
-    return {
-        "quar_total": int(quar_total),
-        "quar_released": int(quar_released),
-    }
-
-
-def get_recoveries(date_range, xlsx_path):
-    data = {
-        d.strftime(DAY_FMT): {
-            "confirmed_cases": None,
-            "est_active_cases": None,
-            "confirmed_deaths": None,
-        }
-        for d in date_range
-    }
-
-    case_data = get_excel_data_for_date_range(
-        xlsx_path, date_range, "Cases (Report Date)"
-    )
-    for row in case_data.values():
-        date_str = row["Date"].strftime(DAY_FMT)
-        data[date_str]["confirmed_cases"] = int(row["Positive Total"])
-        if row["Estimated active cases"]:
-            data[date_str]["est_active_cases"] = int(row["Estimated active cases"])
-
-    deaths_data = get_excel_data_for_date_range(
-        xlsx_path, date_range, "DeathsReported (Report Date)"
-    )
-    for row in deaths_data.values():
-        date_str = row["Date"].strftime(DAY_FMT)
-        data[date_str]["confirmed_deaths"] = int(row["DeathsConfTotal"])
-
-    result = {d.strftime(DAY_FMT): None for d in date_range}
-    for date_str, day in data.items():
-        if "est_active_cases" in day and day["est_active_cases"]:
-            result[date_str] = (
-                day["confirmed_cases"]
-                - day["est_active_cases"]
-                - day["confirmed_deaths"]
-            )
-    return result
-
-
-def set_up_folders(args):
+def set_up_folders(is_dev):
     """Ensure the tmp and output directories are in place and cleared as needed."""
     if not os.path.exists(TMP_DIR):
         # Create the tmp directory if it doesn't exist
         os.mkdir(TMP_DIR)
-    elif not args["dev"]:
+    elif not is_dev:
         # Clear out the tmp directory if it does exist and we're not in dev mode
         files = os.listdir(TMP_DIR)
         if len(files) != 0:
@@ -197,44 +142,33 @@ def get_date_range(today, fromdate):
     return dates
 
 
-def get_last_thursday(today):
-    """Get the date of the most recent Thursday (including today's date, if today is
-    a Thursday. This is used to refer to the weekly data, which is published every
-    Thursday."""
-    todays_day_of_week = today.weekday()
-    if todays_day_of_week == 3:
-        return today
-    else:
-        offset = (todays_day_of_week - 3) % 7
-        return today - timedelta(days=offset)
-
-
 def run():
     args = parse_args()
-    date_range = get_date_range(args["today"], args["fromdate"])
-    last_thursday = get_last_thursday(args["today"])
-    url_date = args["today"].strftime(URL_DATE_FMT).lower()
+    today = args["today"]
+    weekday = today.weekday()
+    if weekday > 4:
+        # Today is a weekend day, and no data is published on weekends. Set today to previous Friday.
+        today = args["today"] - timedelta(days=abs(4 - weekday))
+        print(
+            "Today is a weekend. Because data isn't published on weekends, getting data for "
+            + today.strftime(DAY_FMT)
+        )
+
+    date_range = get_date_range(today, args["fromdate"])
+    url_date = today.strftime(URL_DATE_FMT).lower()
+    xlsx_path = os.path.join(TMP_DIR, url_date + ".xlsx")
+
     if args["url"]:
         url = args["url"]
     else:
         url = URL.format(url_date)
-    xlsx_path = os.path.join(TMP_DIR, url_date + ".xlsx")
 
-    set_up_folders(args)
-    fetch_data(args, url, xlsx_path)
-    manual_data = None if args["nomanual"] else get_manual_data(last_thursday)
-    recoveries = get_recoveries(date_range, xlsx_path)
-    create_infobox_and_barchart(
-        xlsx_path, url, date_range, last_thursday, args, manual_data, recoveries
-    )
-    create_cases_by_category_table(
-        xlsx_path, date_range, last_thursday, manual_data, recoveries
-    )
-    create_cases_by_county_table(xlsx_path, date_range)
-    create_daily_county_table(
-        xlsx_path, args["today"], recoveries[args["today"].strftime(DAY_FMT)]
-    )
-    create_statistics_graphs(xlsx_path, args)
+    set_up_folders(args["dev"])
+    fetch_data(url, xlsx_path, args["dev"])
+
+    create_infobox_and_barchart(xlsx_path, url, today, date_range, args)
+    create_daily_county_table(xlsx_path, today)
+    create_statistics_graphs(xlsx_path, today)
 
 
 if __name__ == "__main__":

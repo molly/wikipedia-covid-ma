@@ -110,7 +110,6 @@ COUNTIES = [
 
 
 def get_data(xlsx_path, today):
-    today_str = today.strftime(DAY_FMT)
     data = {
         c["county"]: {"population": c["population"], "cases": 0, "deaths": 0}
         for c in COUNTIES
@@ -133,7 +132,7 @@ def get_data(xlsx_path, today):
     return data
 
 
-def create_header_row(data, recov):
+def create_header_row(data):
     total_cases = 0
     total_deaths = 0
     for c in COUNTIES:
@@ -145,9 +144,6 @@ def create_header_row(data, recov):
     row += HEADER_STYLE + "| '''14 / 14'''\n"
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_cases)
     row += HEADER_STYLE + "| '''{:,}'''\n".format(total_deaths)
-    row += HEADER_STYLE + "| '''{}'''\n".format(
-        comma_separate(recov) if recov else "RECOVERIES"
-    )
     row += HEADER_STYLE + "| '''{:,}'''\n".format(TOTAL_POPULATION)
     row += HEADER_STYLE + "| '''{}'''\n".format(
         CASES_PER_POP_FORMULA.format(total_cases, divided_pop)
@@ -168,7 +164,6 @@ def create_county_row(county, data):
     row += "| " + ROW_STYLE + "|{:,}\n".format(data["cases"])
     row += "| " + ROW_STYLE + "|{:,}\n".format(data["deaths"])
     if county["population"]:
-        row += "| " + ROW_STYLE + "|{{–}}\n"
         row += "| " + ROW_STYLE + "|{:,}\n".format(county["population"])
         row += "| " + CASES_PER_POP_FORMULA.format(data["cases"], divided_pop) + "\n"
         row += "| " + DEATHS_PER_POP_FORMULA.format(data["deaths"], divided_pop) + "\n"
@@ -183,7 +178,7 @@ def create_county_row(county, data):
 def create_footer(today):
     pretty_today = today.strftime(CITATION_DATE_FORMAT)
     row = '|- style="text-align:center;" class="sortbottom"\n'
-    row += '| colspan="9" | {{{{resize|Updated {}}}}}<br/>'.format(pretty_today)
+    row += '| colspan="8" | {{{{resize|Updated {}}}}}<br/>'.format(pretty_today)
     row += "{{resize|Data is publicly reported by Massachusetts Department of Public "
     row += "Health}}<ref>{{cite web |title=COVID-19 Updates and Information |"
     row += "url=https://www.mass.gov/info-details/covid-19-updates-and-information "
@@ -196,8 +191,8 @@ def create_footer(today):
     return row
 
 
-def create_table(data, today, recov):
-    rows = [create_header_row(data, recov)]
+def create_table(data, today):
+    rows = [create_header_row(data)]
     for c in COUNTIES:
         rows.append(create_county_row(c, data[c["county"]]))
     rows.append(create_footer(today))
@@ -205,6 +200,6 @@ def create_table(data, today, recov):
         f.write("".join(rows))
 
 
-def create_daily_county_table(xlsx_path, today, recov):
+def create_daily_county_table(xlsx_path, today):
     data = get_data(xlsx_path, today)
-    create_table(data, today, recov)
+    create_table(data, today)

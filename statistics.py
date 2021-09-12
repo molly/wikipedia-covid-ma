@@ -109,7 +109,7 @@ def create_deaths_charts(xlsx_path, date_list):
         outfile.write(out_str)
 
 
-def create_statistics_graphs(xlsx_path, args):
-    date_list = create_date_list(args["today"])
+def create_statistics_graphs(xlsx_path, today):
+    date_list = create_date_list(today)
     create_cases_charts(xlsx_path, date_list)
     create_deaths_charts(xlsx_path, date_list)
